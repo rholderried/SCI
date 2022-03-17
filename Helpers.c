@@ -1,11 +1,12 @@
 /**************************************************************************//**
- * \file Helpers.cpp
+ * \file Helpers.c
  * \author Roman Holderried
  *
  * \brief Definitions of the Helpers modules.
  *
  * <b> History </b>
  * 	- 2022-01-17 - File creation
+ *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *****************************************************************************/
 /******************************************************************************
  * Includes
@@ -21,17 +22,17 @@ const uint32_t ui32_pow10[10] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 1000
 /******************************************************************************
  * Function definitions
  *****************************************************************************/
-uint8_t ftoa (uint8_t *pui8_resBuf, float val, uint8_t ui8_maxAfterpoint, bool b_round)
+uint8_t ftoa (uint8_t *pui8_resBuf, float val, bool b_round)
 {
     float signum            = (val < 0) * -1 + (val > 0);
-    float rval              = val + b_round * signum * 0.5f / ui32_pow10[ui8_maxAfterpoint]; 
-    int32_t i32_tmp         = static_cast<int32_t>(rval);
+    float rval              = val + b_round * signum * 0.5f / ui32_pow10[FTOA_MAX_AFTERPOINT]; 
+    int32_t i32_tmp         = (int32_t)(rval);
     int32_t i32_tmp2        = 0;
     uint32_t ui32_decimator = 1;
     uint8_t ui8_size        = 0;
     int8_t i8_exp           = -1;
     uint8_t ui8_digit       = 0;
-    uint32_t ui32_afterPoint= static_cast<uint32_t>(signum * (rval - i32_tmp) * ui32_pow10[ui8_maxAfterpoint]);
+    uint32_t ui32_afterPoint= (uint32_t)(signum * (rval - i32_tmp) * ui32_pow10[FTOA_MAX_AFTERPOINT]);
 
 
     // Sign evaluation - Add the sign if necessary
@@ -84,18 +85,18 @@ uint8_t ftoa (uint8_t *pui8_resBuf, float val, uint8_t ui8_maxAfterpoint, bool b
     {
         int8_t  i = 0;
         bool    b_trailingZero = true;
-        uint8_t ui8_tmp[ui8_maxAfterpoint] = {0};
+        uint8_t ui8_tmp[FTOA_MAX_AFTERPOINT] = {0};
         uint8_t ui8_sizeTmp = 0;
 
-        ui32_decimator = ui32_pow10[ui8_maxAfterpoint - 1];
+        ui32_decimator = ui32_pow10[FTOA_MAX_AFTERPOINT - 1];
 
         // Keep the space for the decimal point free
         pui8_resBuf++;
 
         // Convert all digits after the decimal point
-        while(i < ui8_maxAfterpoint)
+        while(i < FTOA_MAX_AFTERPOINT)
         {
-            ui8_digit = static_cast<uint8_t>(ui32_afterPoint / ui32_decimator);
+            ui8_digit = (uint8_t)(ui32_afterPoint / ui32_decimator);
             ui32_afterPoint -= ui8_digit * ui32_decimator;
             ui32_decimator /= 10;
             ui8_tmp[i] = (ui8_digit + '0');

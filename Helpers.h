@@ -16,7 +16,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// #define FTOA_MAX_AFTERPOINT 5
+/******************************************************************************
+ * Defines
+ *****************************************************************************/
+#define FTOA_MAX_AFTERPOINT 5
 /******************************************************************************
  * Function declarations
  *****************************************************************************/
@@ -29,11 +32,11 @@
  * 
  * @param   *pui8_resBuf    Pointer to the buffer which will be holding the result.
  * @param   val             Float value to be converted.
- * @param   maxAfterPoint   Maximum digits after the decimal point that will be accounted for. Defaults to 5.
+ * @param   maxAfterPoint   Maximum digits after the decimal point that will be accounted for.
  * @param   b_round         Value gets rounded according to the after point digits or not.
  * @returns Output string size in bytes.
  */
-uint8_t ftoa (uint8_t *pui8_resBuf, float val, uint8_t maxAfterPoint = 5, bool b_round = true);
+uint8_t ftoa (uint8_t *pui8_resBuf, float val, bool b_round);
 
 
 

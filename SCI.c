@@ -1,18 +1,20 @@
 /**************************************************************************//**
- * \file SerialProtocol.cpp
+ * \file SCI.c
  * \author Roman Holderried
  *
  * \brief Definitions for the SerialProtocol module.
  *
  * <b> History </b>
  * 	- 2022-01-13 - File creation
+ *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *****************************************************************************/
 
-#include "SerialProtocol.h"
-#include <stdint.h>
-#include "Commands.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
+
+#include "SCI.h"
+#include "SCICommands.h"
 #include "Helpers.h"
 #include "Variables.h"
 #include "Buffer.h"

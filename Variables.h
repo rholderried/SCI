@@ -9,6 +9,7 @@
  *
  * <b> History </b>
  * 	- 2022-01-14 - File creation
+ *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *****************************************************************************/
 #ifndef _VARIABLES_H_
 #define _VARIABLES_H_
@@ -82,57 +83,59 @@ typedef struct
     ACTION_PROCEDURE ap;
 }VAR;
 
-class VarAccess
-{
-    public:
+#define VAR_DEFAULT {NULL, eVARTYPE_NONE, eDTYPE_UINT8, {0, 0}, NULL}
 
+typedef struct
+{
     uint8_t ui8_varStructLength;    /*!< Remembers the length of the variable structure.*/
     VAR     *p_varStruct;           /*!< Remembers the address of the variable structure.*/
 
-    /** \brief constructor */
-    VarAccess();
+    WRITEEEPROM_CB  writeEEPROM_cb;  /*!< Gets called in case of a EEPROM variable has been writen by command.*/
+    READEEPROM_CB   readEEPROM_cb;   /*!< Gets called in case of a EEPROM variable has been read by command.*/
+}VAR_ACCESS;
 
-    /** \brief Initializes the variable structure.
+#define VAR_ACCESS_DEFAULT  {0, NULL, NULL, NULL}
+
+/******************************************************************************
+ * Function declarations
+ *****************************************************************************/
+/** \brief Initializes the variable structure.
      * 
      * This function sets up the "partition table" for EEPROM accesses and reads writes the
      * values currently stored in the EEPROM to the variable structure.
      *
      * @returns Success indicator.
      */
-    bool initVarstruct();
+bool initVarstruct(VAR_ACCESS* p_varAccess);
 
-    WRITEEEPROM_CB  writeEEPROM_cb = nullptr;  /*!< Gets called in case of a EEPROM variable has been writen by command.*/
-    READEEPROM_CB   readEEPROM_cb  = nullptr;   /*!< Gets called in case of a EEPROM variable has been read by command.*/
-    
-    /** \brief Performs a variable read operation through the variable structure.
-     *
-     * @param i16_varNum    Variable number (deduced from ID number) to access.
-     * @param *pf_val       Address to the variable to which the value gets written.
-     * @returns Success indicator.
-     */
-    bool readValFromVarStruct(int16_t i16_varNum, float *pf_val);
+/** \brief Performs a variable read operation through the variable structure.
+ *
+ * @param i16_varNum    Variable number (deduced from ID number) to access.
+ * @param *pf_val       Address to the variable to which the value gets written.
+ * @returns Success indicator.
+ */
+bool readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf_val);
 
-    /** \brief Performs a variable write operation through the variable structure.
-     *
-     * @param i16_varNum    Variable number (deduced from ID number) to access.
-     * @param f_val         Value to write.
-     * @returns Success indicator.
-     */
-    bool writeValToVarStruct(int16_t i16_varNum, float f_val);
+/** \brief Performs a variable write operation through the variable structure.
+ *
+ * @param i16_varNum    Variable number (deduced from ID number) to access.
+ * @param f_val         Value to write.
+ * @returns Success indicator.
+ */
+bool writeValToVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float f_val);
 
-    /** \brief Reads a value from the EEPROM into the Variable structure.
-     *
-     * @param i16_varNum    Variable structure number.
-     * @returns Success indicator.
-     */
-    bool readEEPROMValueIntoVarStruct(int16_t i16_varNum);
+/** \brief Reads a value from the EEPROM into the Variable structure.
+ *
+ * @param i16_varNum    Variable structure number.
+ * @returns Success indicator.
+ */
+bool readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
-    /** \brief Writes the EEPROM by the value read out from the variable structure.
-     *
-     * @param i16_varNum    Variable structure number.
-     * @returns Success indicator.
-     */
-    bool writeEEPROMwithValueFromVarStruct(int16_t i16_varNum);
-};
+/** \brief Writes the EEPROM by the value read out from the variable structure.
+ *
+ * @param i16_varNum    Variable structure number.
+ * @returns Success indicator.
+ */
+bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
 #endif //_VARIABLES_H_

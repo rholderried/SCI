@@ -6,44 +6,34 @@
  *
  * <b> History </b>
  * 	- 2022-01-13 - File creation
+ *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *****************************************************************************/
 
 #include "Buffer.h"
 
-
 /******************************************************************************
- * Class method definitions
+ * Function definitions
  *****************************************************************************/
 
-Buffer::Buffer(uint8_t ui8_size, uint8_t *pui8_buf)
-{
-    pui8_bufPtr     = pui8_buf;
-    i16_bufIdx      = -1;
-    ui8_bufLen      = ui8_size;
-    ui8_bufSpace    = ui8_size;
-    b_ovfl          = false;
-}
-
-//=============================================================================
-void Buffer::putElem(uint8_t ui8_data)
+void putElem(FIFO_BUF* p_inst, uint8_t ui8_data)
 {
     // Put the data into the buffer only when it is not going to be overflowed
-    if (ui8_bufSpace > 0)
+    if (p_inst->ui8_bufSpace > 0)
     {
-        ui8_bufSpace--;
-        i16_bufIdx++;
-        pui8_bufPtr[i16_bufIdx] = ui8_data;
+        p_inst->ui8_bufSpace--;
+        p_inst->i16_bufIdx++;
+        p_inst->pui8_bufPtr[p_inst->i16_bufIdx] = ui8_data;
     }
     else
-        b_ovfl = true;
+        p_inst->b_ovfl = true;
 }
 
 //=============================================================================
-uint8_t Buffer::readBuf(uint8_t **pui8_target)
+uint8_t readBuf(FIFO_BUF* p_inst, uint8_t **pui8_target)
 {
-    uint8_t size = i16_bufIdx + 1;
+    uint8_t size = p_inst->i16_bufIdx + 1;
 
-    *pui8_target = pui8_bufPtr;
+    *pui8_target = p_inst->pui8_bufPtr;
 
     //flushBuf();
 
@@ -51,21 +41,21 @@ uint8_t Buffer::readBuf(uint8_t **pui8_target)
 }
 
 //=============================================================================
-void Buffer::flushBuf (void)
+void flushBuf (FIFO_BUF* p_inst)
 {
-    i16_bufIdx      = -1;
-    ui8_bufSpace    = ui8_bufLen;
-    b_ovfl          = false;
+    p_inst->i16_bufIdx      = -1;
+    p_inst->ui8_bufSpace    = p_inst->ui8_bufLen;
+    p_inst->b_ovfl          = false;
 } 
 
 //=============================================================================
-bool Buffer::getNextFreeBufSpace(uint8_t **pui8_target)
+bool getNextFreeBufSpace(FIFO_BUF* p_inst, uint8_t **pui8_target)
 {
     bool success = false;
 
-    if (ui8_bufSpace > 0)
+    if (p_inst->ui8_bufSpace > 0)
     {
-        *pui8_target = &pui8_bufPtr[i16_bufIdx + 1];
+        *pui8_target = &p_inst->pui8_bufPtr[p_inst->i16_bufIdx + 1];
         success = true;
     }
 
@@ -73,14 +63,14 @@ bool Buffer::getNextFreeBufSpace(uint8_t **pui8_target)
 }
 
 //=============================================================================
-bool Buffer::increaseBufIdx(uint8_t ui8_size)
+bool increaseBufIdx(FIFO_BUF* p_inst, uint8_t ui8_size)
 {
     bool success = false;
 
-    if ((i16_bufIdx + ui8_size) < ui8_bufLen)
+    if ((p_inst->i16_bufIdx + ui8_size) < p_inst->ui8_bufLen)
     {
-        i16_bufIdx      += ui8_size;
-        ui8_bufSpace    -= ui8_size;
+        p_inst->i16_bufIdx      += ui8_size;
+        p_inst->ui8_bufSpace    -= ui8_size;
         success         = true;
     }
 
@@ -89,7 +79,7 @@ bool Buffer::increaseBufIdx(uint8_t ui8_size)
 }
 
 //=============================================================================
-int16_t Buffer::getActualIdx(void)
+int16_t getActualIdx(FIFO_BUF* p_inst)
 {
-    return i16_bufIdx;
+    return p_inst->i16_bufIdx;
 }

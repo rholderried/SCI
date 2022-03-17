@@ -9,6 +9,7 @@
  *
  * <b> History </b>
  * 	- 2022-01-13 - File creation
+ *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *****************************************************************************/
 
 #ifndef _BUFFER_H_
@@ -20,11 +21,12 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 /******************************************************************************
  * Type definitions
  *****************************************************************************/
-
+    
 typedef struct
 {
     uint8_t     *pui8_bufPtr;   /*!< Pointer to the external buffer. */
@@ -32,7 +34,9 @@ typedef struct
     uint8_t     ui8_bufLen;     /*!< Length of the buffer array. */
     uint8_t     ui8_bufSpace;   /*!< Actual remaining buffer space. */
     bool        b_ovfl;         /*!< Overflow indicator. */
-}BUF_FIFO;
+}FIFO_BUF;
+
+#define FIFO_BUF_DEFAULT {NULL, 0, 0, 0, false}
 
 /******************************************************************************
  * Function declaration
@@ -41,7 +45,7 @@ typedef struct
  *
  * @param data Data byte
  */
-void putElem(uint8_t ui8_data);
+void putElem(FIFO_BUF* p_inst, uint8_t ui8_data);
 
 /** \brief Buffer read operation
  *
@@ -51,33 +55,33 @@ void putElem(uint8_t ui8_data);
  * @param   **pui8_target Pointer address.
  * @returns Size of the stored data in bytes.
  */
-uint8_t readBuf (uint8_t **pui8_target);
+uint8_t readBuf (FIFO_BUF* p_inst, uint8_t **pui8_target);
 
 /** \brief Empties the buffer
  *
  * Sets the buffer index to -1 (start value) and the actual buffer Space
  * to the buffer length. The buffer contents hence are "invalidated".
  */
-void flushBuf (void);
+void flushBuf (FIFO_BUF* p_inst);
 
 /** \brief Sets the input pointer to the next free buffer address
  * 
  * @param   **pui8_target Pointer address.
  * @returns True if there was free buffer space available, false otherwise
  */
-bool getNextFreeBufSpace(uint8_t **pui8_target);
+bool getNextFreeBufSpace(FIFO_BUF* p_inst, uint8_t **pui8_target);
 
 /** \brief Increases the buffer index.
  *
  * @param   ui8_size counts about which to increase the index.
  * @returns True if the operation was successful, false otherwise.
  */
-bool increaseBufIdx(uint8_t ui8_size);
+bool increaseBufIdx(FIFO_BUF* p_inst, uint8_t ui8_size);
 
 /** \brief Returns the actual (last written) buffer index.
  *
  * @returns actual buffer index.
  */
-int16_t getActualIdx(void);
+int16_t getActualIdx(FIFO_BUF* p_inst);
 
 #endif

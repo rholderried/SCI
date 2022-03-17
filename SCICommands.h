@@ -1,11 +1,12 @@
 /**************************************************************************//**
- * \file Commands.h
+ * \file SCICommands.h
  * \author Roman Holderried
  *
  * \brief Command evaluation and variable structure access.
  *
  * <b> History </b>
  * 	- 2022-01-13 - File creation
+ *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *****************************************************************************/
 #ifndef _COMMANDS_H_
 #define _COMMANDS_H_
@@ -60,26 +61,26 @@ typedef struct
 #define RESPONSE_DEFAULT         {false, 0, 0.0, eCOMMAND_TYPE_NONE}
 
 /******************************************************************************
- * Class declarations
+ * Type definitions
  *****************************************************************************/
-class SerialCommands
+typedef struct
 {
-    public:
-
     uint8_t ui8_cmdCBStructLength;  /*!< Remembers the length of the command callback structure.*/
     COMMAND_CB *p_cmdCBStruct;      /*!< Command callback structure.*/
 
-    VarAccess varAccess = VarAccess(); /*!< Variable structure access methods.*/
-    
-    /** \brief SerialCommands c'tor*/
-    SerialCommands(void);
-    
-    /** \brief Executes the incoming command.
-     *
-     * @param cmd               Holds the command information from the parsed command.
-     * @returns Response structure.
-     */
-    RESPONSE    executeCmd (COMMAND cmd); 
-};
+    // VarAccess varAccess = VarAccess(); /*!< Variable structure access methods.*/
+}SCI_COMMANDS;
+
+#define SCI_COMMANDS_DEFAULT    {0, NULL}
+
+/******************************************************************************
+ * Function declarations
+ *****************************************************************************/
+/** \brief Executes the incoming command.
+ *
+ * @param cmd               Holds the command information from the parsed command.
+ * @returns Response structure.
+ */
+RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAND cmd); 
 
 #endif //_COMMANDS_H_
