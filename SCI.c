@@ -21,20 +21,10 @@
 
 
 /******************************************************************************
- * Class method definitions
+ * Function definitions
  *****************************************************************************/
-SerialProtocol::SerialProtocol()
-{
-    control.e_state = PROTOCOL_STATE_DEFAULT;
-    control.b_error = false;
-    control.b_sent = false;
-    #ifdef DEBUG_FUNCTIONS
-    control.e_dbgActState = eDEBUG_ACTIVATION_NONE;
-    #endif
-}
-
 //=============================================================================
-void SerialProtocol::setupCallbacks(TX_CB transmit_cb, READEEPROM_CB readEEPROM_cb, WRITEEEPROM_CB writeEEPROM_cb)
+void setupCallbacks(TX_CB transmit_cb, READEEPROM_CB readEEPROM_cb, WRITEEEPROM_CB writeEEPROM_cb)
 {
     txCallback                              = transmit_cb;
     cmdModule.varAccess.readEEPROM_cb       = readEEPROM_cb;
@@ -42,7 +32,7 @@ void SerialProtocol::setupCallbacks(TX_CB transmit_cb, READEEPROM_CB readEEPROM_
 }
 
 //=============================================================================
-void SerialProtocol::setupVariableStructure(VAR *p_varStruct, uint8_t ui8_structLen)
+void setupVariableStructure(VAR *p_varStruct, uint8_t ui8_structLen)
 {
     cmdModule.varAccess.p_varStruct = p_varStruct;
     cmdModule.varAccess.ui8_varStructLength = ui8_structLen;
@@ -50,14 +40,14 @@ void SerialProtocol::setupVariableStructure(VAR *p_varStruct, uint8_t ui8_struct
 }
 
 //=============================================================================
-void SerialProtocol::setupCommandStructure(COMMAND_CB *p_cmdStruct, uint8_t ui8_structLen)
+void setupCommandStructure(COMMAND_CB *p_cmdStruct, uint8_t ui8_structLen)
 {
     cmdModule.p_cmdCBStruct = p_cmdStruct;
     cmdModule.ui8_cmdCBStructLength = ui8_structLen;
 }
 
 //=============================================================================
-void SerialProtocol::receive(uint8_t ui8_data)
+void receive(uint8_t ui8_data)
 {
     
     if (ui8_data == STX)
@@ -128,7 +118,7 @@ void SerialProtocol::receive(uint8_t ui8_data)
 }
 
 //=============================================================================
-void SerialProtocol::statemachine(void)
+void statemachine(void)
 {
     
     switch(control.e_state)
@@ -198,7 +188,7 @@ void SerialProtocol::statemachine(void)
 }
 
 //=============================================================================
-COMMAND SerialProtocol::commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
+COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
 {
     uint8_t i = 0;
     // uint8_t cmdIdx  = 0;
@@ -297,7 +287,7 @@ COMMAND SerialProtocol::commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
 }
 
 //=============================================================================
-uint8_t SerialProtocol::responseBuilder(uint8_t *pui8_buf, RESPONSE response)
+uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
 {
     uint8_t ui8_size    = 0;
     uint8_t cmdIdArr[3] = {'?', '!', ':'};

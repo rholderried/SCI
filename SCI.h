@@ -25,6 +25,7 @@
 #include "Variables.h"
 #include "Buffer.h"
 #include "CommandStucture.h"
+#include "DataLink.h"
 
 /******************************************************************************
  * Defines
@@ -33,8 +34,7 @@
 // #define NUMBER_OF_CONTROL_BYTES 2
 #define TXRX_BUFFER_LENGTH      TRANSMIT_BUFFER_LENGTH
 
-#define STX 0x02
-#define ETX 0x03
+
 
 #define GETVAR_IDENTIFIER   '?'
 #define SETVAR_IDENTIFIER   '!'
@@ -67,7 +67,7 @@ typedef enum
 }DEBUG_ACTIVATION_STATE;
 
 /******************************************************************************
- * Class declarations
+ * Type definitions
  *****************************************************************************/
 typedef struct
 {
@@ -94,6 +94,13 @@ typedef struct
 
     TX_CB       txCallback = nullptr;   /*!< Transmission callback function. */ 
 }SCI;
+
+typedef struct
+{
+    WRITEEEPROM_CB writeEEPROMCallback; /*!< Callback for writing data into the EEPROM. */
+    READEEPROM_CB readEEPROMCallback;   /*!< Callback for reading data from the EEPROM. */
+    TX_CB transmitCallback;             /*!< Callback for the data transmission driver. */
+}SCI_CALLBACKS;
 
 #ifdef DEBUG_FUNCTIONS
 #define SCI_DEFAULT {   {ePROTOCOL_IDLE, false, false, eDEBUG_ACTIVATION_NONE, {NULL}},\
