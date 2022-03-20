@@ -26,36 +26,27 @@
 #include "Buffer.h"
 #include "CommandStucture.h"
 #include "DataLink.h"
+#include "SCIconfig.h"
 
 /******************************************************************************
  * Defines
  *****************************************************************************/
-#define TRANSMIT_BUFFER_LENGTH  64
-// #define NUMBER_OF_CONTROL_BYTES 2
-#define TXRX_BUFFER_LENGTH      TRANSMIT_BUFFER_LENGTH
-
-
 
 #define GETVAR_IDENTIFIER   '?'
 #define SETVAR_IDENTIFIER   '!'
 #define COMMAND_IDENTIFIER  ':'
 
-//#define DEBUG_FUNCTIONS
-#define NUMBER_OF_DEBUG_FUNCTIONS 10
-
 /******************************************************************************
  * Type definitions
  *****************************************************************************/
-typedef bool(*TX_CB)(uint8_t*, uint8_t);
-typedef void(*DBG_FCN_CB)(void);
 
 typedef enum
 {
-    ePROTOCOL_IDLE,
-    ePROTOCOL_RECEIVING,
-    ePROTOCOL_EVALUATING,
-    ePROTOCOL_SENDING,
-    ePROTOCOL_DEBUG
+    ePROTOCOL_ERROR         = -1,
+    ePROTOCOL_IDLE          = 0,
+    ePROTOCOL_RECEIVING     = 1,
+    ePROTOCOL_EVALUATING    = 2,
+    ePROTOCOL_SENDING       = 3,
 }PROTOCOL_STATE;
 
 typedef enum
@@ -71,28 +62,19 @@ typedef enum
  *****************************************************************************/
 typedef struct
 {
-    struct {
-        PROTOCOL_STATE  e_state;    /*!< Actual protocol state. */
-        bool            b_error;    /*!< Error flag. */
-        bool            b_sent;     /*!< Data sent flag. */ 
+    PROTOCOL_STATE  e_state;    /*!< Actual protocol state. */
 
-        #ifdef DEBUG_FUNCTIONS
-        DEBUG_ACTIVATION_STATE e_dbgActState;                   /*!< State of the received symbols for debug function activation. */   
-        DBG_FCN_CB  debugFcnArray[NUMBER_OF_DEBUG_FUNCTIONS];   /*!< Function pointer array to the debug command functions. */
-        #endif
-    } control;
-
-    uint8_t txRxBuffer[TXRX_BUFFER_LENGTH] = {0};   /*!< Combined TX/RX buffer space. */ 
+    uint8_t rxBuffer[RX_BUFFER_LENGTH] = {0};   /*!< RX buffer space. */ 
+    uint8_t txBuffer[TX_BUFFER_LENGTH] = {0};   /*!< TX buffer space. */ 
 
     FIFO_BUF rxFIFO;  /*!< RX buffer management. */ 
     FIFO_BUF txFIFO;  /*!< TX buffer management. */
 
+    DATALINK     datalink;
     SCI_COMMANDS sciCommands;   /*!< Commands variable structure. */
     VAR_ACCESS   varAccess;     /*!< Variable structure access. */
-    // Buffer rxBuffer = Buffer(TXRX_BUFFER_LENGTH, this->txRxBuffer); /*!< RX buffer handler. */ 
-    // Buffer txBuffer = Buffer(TXRX_BUFFER_LENGTH, this->txRxBuffer); /*!< TX buffer handler. */ 
 
-    TX_CB       txCallback = nullptr;   /*!< Transmission callback function. */ 
+    // TX_CB       txCallback = nullptr;   /*!< Transmission callback function. */ 
 }SCI;
 
 typedef struct
@@ -104,17 +86,19 @@ typedef struct
 
 #ifdef DEBUG_FUNCTIONS
 #define SCI_DEFAULT {   {ePROTOCOL_IDLE, false, false, eDEBUG_ACTIVATION_NONE, {NULL}},\
-                        {0},\
+                        {0},{0}\
                         FIFO_BUF_DEFAULT,\
                         FIFO_BUF_DEFAULT,\
+                        DATALINK_DEFAULT,\
                         SCI_COMMANDS_DEFAULT,\
                         VAR_ACCESS_DEFAULT,\
                         NULL}
 #else
 #define SCI_DEFAULT {   {ePROTOCOL_IDLE, false, false,\
-                        {0},\
+                        {0},{0}\
                         FIFO_BUF_DEFAULT,\
                         FIFO_BUF_DEFAULT,\
+                        DATALINK_DEFAULT,\
                         SCI_COMMANDS_DEFAULT,\
                         VAR_ACCESS_DEFAULT,\
                         NULL}
@@ -123,6 +107,9 @@ typedef struct
 /******************************************************************************
  * Function definitions
  *****************************************************************************/
+/** \brief Initialize protocol functionality.
+ */
+void SCIinit(void);
 
 /** \brief Take and save the function pointers to the user-defined callbacks.
  *
@@ -157,7 +144,7 @@ void statemachine   (void);
  *
  * @param ui8_data  Received data byte to be processed within the proocol.
  */
-void receive        (uint8_t ui8_data);
+void receiveData    (uint8_t ui8_data);
 
 /** \brief Parses incoming message strings.
  *

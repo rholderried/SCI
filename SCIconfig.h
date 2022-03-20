@@ -1,0 +1,26 @@
+/**************************************************************************//**
+ * \file SCIconfig.h
+ * \author Roman Holderried
+ *
+ * \brief Request - Response protocol functionality.
+ * 
+ * This serial protocol has been initially written for the MMX heater controller
+ * module. It provides data read/write access and a command interface to the 
+ * application.
+ *
+ * <b> History </b>
+ * 	- 2022-01-13 - File creation 
+ *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
+ *****************************************************************************/
+
+#ifndef _SCICONFIG_H_
+#define _SCICONFIG_H_
+
+/******************************************************************************
+ * Defines
+ *****************************************************************************/
+#define RX_BUFFER_LENGTH    64
+#define TX_BUFFER_LENGTH    64
+
+
+#endif // _SCICONFIG_H_

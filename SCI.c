@@ -19,6 +19,10 @@
 #include "Variables.h"
 #include "Buffer.h"
 
+/******************************************************************************
+ * Global variable definition
+ *****************************************************************************/
+static SCI sci = SCI_DEFAULT;
 
 /******************************************************************************
  * Function definitions
@@ -47,80 +51,25 @@ void setupCommandStructure(COMMAND_CB *p_cmdStruct, uint8_t ui8_structLen)
 }
 
 //=============================================================================
-void receive(uint8_t ui8_data)
+void receiveData(uint8_t ui8_data)
 {
-    
-    if (ui8_data == STX)
-    {
-        if (control.e_state == ePROTOCOL_IDLE)
-        {
-            control.e_state = ePROTOCOL_RECEIVING;
-            rxBuffer.putElem(ui8_data);
-        }
-        else
-        // TODO: Error handling
-        {
-            control.e_state = ePROTOCOL_IDLE;
-        }
-    }
-    else if (ui8_data == ETX)
-    {
-        
-        if (control.e_state == ePROTOCOL_RECEIVING)
-        {
-            control.e_state = ePROTOCOL_EVALUATING;
-            rxBuffer.putElem(ui8_data);
-        }
-        else
-        // TODO: Error handling
-        {
-            control.e_state = ePROTOCOL_IDLE;
-        }
-    }
-    else if (control.e_state == ePROTOCOL_RECEIVING)
-    {
-        rxBuffer.putElem(ui8_data);
-    }
-    #ifdef DEBUG_FUNCTIONS
-    if (control.e_state == ePROTOCOL_IDLE)
-    {
-        switch(control.e_dbgActState)
-        {
-            case eDEBUG_ACTIVATION_NONE:
-                control.e_dbgActState = ui8_data == 'D' ? eDEBUG_ACTIVATION_S1 : eDEBUG_ACTIVATION_NONE;
-                break;
-            case eDEBUG_ACTIVATION_S1:
-                control.e_dbgActState = ui8_data == 'b' ? eDEBUG_ACTIVATION_S2 : eDEBUG_ACTIVATION_NONE;
-                break;
-            case eDEBUG_ACTIVATION_S2:
-                control.e_dbgActState = ui8_data == 'g' ? eDEBUG_ACTIVATION_FINAL : eDEBUG_ACTIVATION_NONE;
-                break;
-            case eDEBUG_ACTIVATION_FINAL:
-                {
-                    int8_t ui8_parsed = -1;
-                    ui8_parsed = ui8_data - '0';
-
-                    // If the number is in range, execute callback
-                    if (ui8_parsed >= 0 && ui8_parsed < 10)
-                    {
-                        if(control.debugFcnArray[ui8_parsed] != nullptr)
-                            control.debugFcnArray[ui8_parsed]();
-                    }
-                    control.e_dbgActState = eDEBUG_ACTIVATION_NONE;
-                }
-                break;
-                
-        }
-    }
-    else
-        control.e_dbgActState = eDEBUG_ACTIVATION_NONE;
-    #endif
+    // Call the lower level datalink level functionality
+    receive(&sci.datalink, &sci.rxFIFO, ui8_data);
 }
+
 
 //=============================================================================
 void statemachine(void)
 {
-    
+    // Check the lower level datalink states and set the protocol state accordingly
+    if (sci.e_state > ePROTOCOL_ERROR)
+    {
+        if (sci.e_state < ePROTOCOL_EVALUATING)
+            sci.e_state = getDatalinkReceiveState(&sci.datalink);
+        // else
+        //     sci.e_state = sci.datalink.tState;
+    }
+
     switch(control.e_state)
     {
         case ePROTOCOL_IDLE:
@@ -137,49 +86,41 @@ void statemachine(void)
                 // Parse the command (skip STX and don't care for ETX)
                 cmd = commandParser(++pui8_buf, ui8_msgSize-2);
 
-                rsp = cmdModule.executeCmd(cmd);
+                rsp = executeCmd(&sci.sciCommands, &sci.varAccess, cmd);
 
                 // TODO: Error behaviour if there is no valid response
                 // Currently, the arduino won't send any response
                 if (rsp.b_valid)
                 {
-                    txBuffer.flushBuf();
+                    flushBuf(sci.txFIFO);
                     
-                    // For performance reasons, directly write the TX/RX buffer
-                    txBuffer.putElem(STX);
-                    txBuffer.getNextFreeBufSpace(&pui8_buf);
-                    txBuffer.increaseBufIdx(responseBuilder(pui8_buf, rsp));
-                    txBuffer.putElem(ETX);
-                    // TODO: Error handling -> Message too long 
+                    // "Put" the date into the tx buffer
+                    increaseBufIdx(&sci.txFIFO, responseBuilder(pui8_buf, rsp));
+                    // TODO: Error handling -> Message too long
 
-                    control.e_state = ePROTOCOL_SENDING;
-
+                    if transmit(&sci.datalink, &sci.txFIFO);
+                        sci.e_state = ePROTOCOL_SENDING;
+                    // TODO: Error handling?
+                    else 
+                        sci.e_state = ePROTOCOL_IDLE;
                 }
                 else
-                    control.e_state = ePROTOCOL_IDLE;
-                
-                rxBuffer.flushBuf();
+                    // TODO: Here, we'd better send a error notifier
+                    sci.e_state = ePROTOCOL_IDLE;   
             }
     
             break;
 
         case ePROTOCOL_SENDING:
-            {
-                uint8_t *   pui8_buf;
-                uint8_t     ui8_size;
 
-                if (!control.b_sent && txCallback != nullptr)
-                {
-                    ui8_size = txBuffer.readBuf(&pui8_buf);
-                    control.b_sent = txCallback(pui8_buf, ui8_size);
-                }
-                else
-                {
-                    control.b_sent  = false;
-                    control.e_state = ePROTOCOL_IDLE;
-                }
-                
+            transmitStateMachine(&sci.datalink);
+            
+            if (getDatalinkTransmitState(&sci.datalink) == eDATALINK_TSTATE_READY)
+            {
+                acknowledgeTx(&sci.datalink);
+                sci.e_state = ePROTOCOL_IDLE;
             }
+            
             break;
         
         default:
@@ -227,17 +168,19 @@ COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
     // Variable number conversion
     {
         // One additional character necessary for string termination
-        char p_numStr[i+1] = {0};
+        char *p_numStr = (char*)malloc(i+1);
 
         // copy the number string into new array
         memcpy(p_numStr,pui8_buf,i);
         // Properly terminate string to use the atoi buildin
         p_numStr[i] = '\0';
         // Convert
-        cmd.i16_num = static_cast<int16_t>(atoi(p_numStr));
+        cmd.i16_num = (int16_t)(atoi(p_numStr));
+
+        free(p_numStr);
     }
 
-    /*******************************************************************************************
+    /************************************s*******************************************************
      * Variable value conversion
     *******************************************************************************************/
    // Only if a parameter has been passed
@@ -247,7 +190,7 @@ COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
         uint8_t j = 1;
         uint8_t ui8_numOfVals = 0;
         uint8_t ui8_valueLen = 0;
-        char *p_valStr = nullptr;
+        char *p_valStr = NULL;
 
         while (ui8_numOfVals <= MAX_NUM_COMMAND_VALUES)
         {
@@ -263,7 +206,7 @@ COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
                 ui8_valueLen++;
             }
 
-            p_valStr = new char[ui8_valueLen + 1];
+            p_valStr = (char*)malloc(ui8_valueLen + 1);
 
             // copy the number string into new array
             memcpy(p_valStr, &pui8_buf[i + j - ui8_valueLen], ui8_valueLen);
@@ -272,7 +215,7 @@ COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
 
             cmd.f_valArr[ui8_numOfVals - 1] = atof(p_valStr);
 
-            delete p_valStr;
+            free(p_valStr);
 
             if (j == ui8_valStrLen)
                 break;
