@@ -17,7 +17,9 @@
 /******************************************************************************
  * Includes
  *****************************************************************************/
-#include "stdint.h"
+#include <stdint.h>
+#include "SCIconfig.h"
+
 
 /******************************************************************************
  * defines
@@ -36,6 +38,8 @@
 #ifndef ADDRESS_OFFET
 #define ADDRESS_OFFET ADDRESS_OFFSET_DEFAULT
 #endif
+
+#define EEEPROM_ADDRESS_ILLEGAL 0xFFFF
 
 /******************************************************************************
  * Type definitions
@@ -68,6 +72,14 @@ typedef bool(*READEEPROM_CB)(uint32_t *ui32_val, uint16_t ui16_address);
 /** \brief Action procedure declaration for a setVar operation.*/
 typedef void(*ACTION_PROCEDURE)(void);
 
+typedef struct
+{
+    uint8_t     ui8_idx;
+    uint16_t    ui16_address;
+}EEPROM_PARTITION_INFO;
+
+#define EEPROM_PARTITION_INFO_DEFAULT {0,0}
+
 /** \brief Variable struct member declaration.*/
 typedef struct
 {
@@ -75,11 +87,6 @@ typedef struct
     TYPE    vartype;    /*!< Storage type of the variable (RAM or EEPROM).*/
     DTYPE   datatype;   /*!< Datatype of the linked variable.*/
 
-    struct
-    {
-        uint16_t    ui16_eeAddress; /*!< EEPROM address of the variable value.*/
-        uint8_t     ui8_byteLength; /*!< byte length of the variable depending on data type.*/
-    }runtime;
     ACTION_PROCEDURE ap;
 }VAR;
 
@@ -92,9 +99,11 @@ typedef struct
 
     WRITEEEPROM_CB  writeEEPROM_cb;  /*!< Gets called in case of a EEPROM variable has been writen by command.*/
     READEEPROM_CB   readEEPROM_cb;   /*!< Gets called in case of a EEPROM variable has been read by command.*/
+
+    EEPROM_PARTITION_INFO eepromPartitionTable[MAX_NUMBER_OF_EEPROM_VARS];
 }VAR_ACCESS;
 
-#define VAR_ACCESS_DEFAULT  {0, NULL, NULL, NULL}
+#define VAR_ACCESS_DEFAULT  {0, NULL, NULL, NULL, {EEPROM_PARTITION_INFO_DEFAULT}}
 
 /******************************************************************************
  * Function declarations
@@ -138,4 +147,10 @@ bool readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
  */
 bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
+
+uint16_t getEEPROMAdress(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
+
+/******************************************************************************
+ * Global variable declaration
+ *****************************************************************************/
 #endif //_VARIABLES_H_

@@ -96,7 +96,7 @@ void receive(DATALINK *p_inst, FIFO_BUF *p_rBuf, uint8_t ui8_data);
 DATALINK_RECEIVE_STATE getDatalinkReceiveState(DATALINK *p_inst);
 DATALINK_TRANSMIT_STATE getDatalinkTransmitState(DATALINK *p_inst);
 
-bool transmit(DATALINK *p_inst, FIFO_BUF * p_tBuf)//uint8_t *pui8_buf, uint8_t ui8_bufLen);
+bool transmit(DATALINK *p_inst, FIFO_BUF * p_tBuf);//uint8_t *pui8_buf, uint8_t ui8_bufLen);
 void transmitStateMachine(DATALINK *p_inst);
 void acknowledgeTx(DATALINK *p_inst);
 

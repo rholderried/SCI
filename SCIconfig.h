@@ -22,5 +22,7 @@
 #define RX_BUFFER_LENGTH    64
 #define TX_BUFFER_LENGTH    64
 
+#define MAX_NUMBER_OF_EEPROM_VARS 10
+
 
 #endif // _SCICONFIG_H_
