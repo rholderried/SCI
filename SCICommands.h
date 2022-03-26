@@ -68,7 +68,7 @@ typedef struct
     COMMAND_CB *p_cmdCBStruct;      /*!< Command callback structure.*/
 }SCI_COMMANDS;
 
-#define SCI_COMMANDS_DEFAULT    {0, NULL}
+#define SCI_COMMANDS_DEFAULT    {NULL}
 
 /******************************************************************************
  * Function declarations

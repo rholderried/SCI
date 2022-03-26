@@ -174,7 +174,7 @@ bool readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
 
         for (uint8_t i = 0; i < ui8_numberOfIncs; i++)
         {
-            successIndicator &= readEEPROM_cb(&ui32_tmp, ui16_eepromAddress + i);
+            successIndicator &= p_varAccess->readEEPROM_cb(&ui32_tmp, ui16_eepromAddress + i);
 
             if (!successIndicator)
                 goto terminate;
@@ -288,7 +288,7 @@ bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varN
             ui32_tmp = u_tmp.ui32_val >> (i - 1) * EEPROM_ADDRESSTYPE * 8;
             ui32_tmp &= ui32_mask;
 
-            successIndicator &= writeEEPROM_cb(ui16_eepromAddress + (i - 1));
+            successIndicator &= p_varAccess->writeEEPROM_cb(ui32_tmp, ui16_eepromAddress + (i - 1));
 
             if (!successIndicator)
                 break;

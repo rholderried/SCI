@@ -102,7 +102,7 @@ typedef struct
     EEPROM_PARTITION_INFO eepromPartitionTable[MAX_NUMBER_OF_EEPROM_VARS];
 }VAR_ACCESS;
 
-#define VAR_ACCESS_DEFAULT  {0, NULL, NULL, NULL, {EEPROM_PARTITION_INFO_DEFAULT}}
+#define VAR_ACCESS_DEFAULT  {NULL, NULL, NULL, {EEPROM_PARTITION_INFO_DEFAULT}}
 
 /******************************************************************************
  * Function declarations
@@ -147,7 +147,7 @@ bool readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
 
-uint16_t getEEPROMAdress(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
+uint16_t getEEPROMAdress(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
 /******************************************************************************
  * Global variable declaration

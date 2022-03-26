@@ -83,6 +83,9 @@ void receive(DATALINK *p_inst, FIFO_BUF *p_rBuf, uint8_t ui8_data)
                     p_inst->dbgActState = eDATALINK_DBGSTATE_IDLE;
                 }
                 break;       
+        
+            default:
+                break;
         }
     }
     else
@@ -119,11 +122,10 @@ bool transmit(DATALINK *p_inst, FIFO_BUF * p_tBuf)
 
 //=============================================================================
 void transmitStateMachine(DATALINK *p_inst)
-{
-    bool b_busyState = txGetBusyStateCallback();
-
-    if (b_busyState)
-        return;
+{    
+    if (p_inst->txGetBusyStateCallback())
+        if (p_inst->txGetBusyStateCallback())
+            return;
 
     switch (p_inst->tState)
     {
@@ -152,6 +154,9 @@ void transmitStateMachine(DATALINK *p_inst)
                 p_inst->txCallback(&ui8_data, 1);
                 p_inst->tState = eDATALINK_TSTATE_READY;
             }
+            break;
+            
+        default:
             break;
     }
 }

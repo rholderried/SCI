@@ -54,7 +54,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAN
         case eCOMMAND_TYPE_SETVAR:
             {
                 float f_formerVal, newVal = 0.0;
-                bool writeSuccessful = false;
+                //bool writeSuccessful = false;
                 bool readSuccessful = readValFromVarStruct(p_varAccess, cmd.i16_num, &f_formerVal);
 
                 if (!readSuccessful)

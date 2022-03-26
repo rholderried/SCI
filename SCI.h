@@ -64,8 +64,8 @@ typedef struct
 {
     PROTOCOL_STATE  e_state;    /*!< Actual protocol state. */
 
-    uint8_t rxBuffer[RX_BUFFER_LENGTH] = {0};   /*!< RX buffer space. */ 
-    uint8_t txBuffer[TX_BUFFER_LENGTH] = {0};   /*!< TX buffer space. */ 
+    uint8_t rxBuffer[RX_BUFFER_LENGTH];   /*!< RX buffer space. */ 
+    uint8_t txBuffer[TX_BUFFER_LENGTH];   /*!< TX buffer space. */ 
 
     FIFO_BUF rxFIFO;  /*!< RX buffer management. */ 
     FIFO_BUF txFIFO;  /*!< TX buffer management. */
@@ -77,20 +77,23 @@ typedef struct
     // TX_CB       txCallback = nullptr;   /*!< Transmission callback function. */ 
 }SCI;
 
-typedef struct
-{
-    WRITEEEPROM_CB writeEEPROMCallback; /*!< Callback for writing data into the EEPROM. */
-    READEEPROM_CB readEEPROMCallback;   /*!< Callback for reading data from the EEPROM. */
-    TX_CB transmitCallback;             /*!< Callback for the data transmission driver. */
-}SCI_CALLBACKS;
-
-
 #define SCI_DEFAULT {   ePROTOCOL_IDLE,\
+                        {0},{0},\
                         FIFO_BUF_DEFAULT,\
                         FIFO_BUF_DEFAULT,\
                         DATALINK_DEFAULT,\
                         SCI_COMMANDS_DEFAULT,\
                         VAR_ACCESS_DEFAULT}
+
+typedef struct
+{
+    WRITEEEPROM_CB writeEEPROMCallback;         /*!< Callback for writing data into the EEPROM. */
+    READEEPROM_CB readEEPROMCallback;           /*!< Callback for reading data from the EEPROM. */
+    TX_CB transmitCallback;                     /*!< Callback for the data transmission driver. */
+    GET_BUSY_STATE_CB getTxBusyStateCallback;   /*!< Callback for polling the busy state of the transmitter. */
+}SCI_CALLBACKS;
+
+
 
 /******************************************************************************
  * Function definitions

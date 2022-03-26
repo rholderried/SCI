@@ -33,13 +33,14 @@ static SCI sci = SCI_DEFAULT;
 void SCIinit(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
 {
     // Initialize the callbacks
-    sci.varAccess.readEEPROM_cb = callbacks.readEEPROMCallback;
-    sci.varAccess.writeEEPROM_cb = callbacks.writeEEPROMCallback;
-    sci.datalink.txCallback = callbacks.transmitCallback;
+    sci.varAccess.readEEPROM_cb                 = callbacks.readEEPROMCallback;
+    sci.varAccess.writeEEPROM_cb                = callbacks.writeEEPROMCallback;
+    sci.datalink.txCallback                     = callbacks.transmitCallback;
+    sci.datalink.txGetBusyStateCallback         = callbacks.getTxBusyStateCallback;
 
     // Hand over the pointers to the var and cmd structs
-    sci.varAccess.p_varStruct = p_varStruct;
-    sci.sciCommands.p_cmdCBStruct = p_cmdStruct;
+    sci.varAccess.p_varStruct       = p_varStruct;
+    sci.sciCommands.p_cmdCBStruct   = p_cmdStruct;
 }
 
 //=============================================================================
@@ -85,7 +86,7 @@ void statemachine(void)
         //     sci.e_state = sci.datalink.tState;
     }
 
-    switch(control.e_state)
+    switch(sci.e_state)
     {
         case ePROTOCOL_IDLE:
             break;
@@ -96,10 +97,10 @@ void statemachine(void)
                 uint8_t *   pui8_buf;
                 COMMAND     cmd;
                 RESPONSE    rsp; 
-                uint8_t     ui8_msgSize = rxBuffer.readBuf(&pui8_buf);
+                uint8_t     ui8_msgSize = readBuf(&sci.rxFIFO, &pui8_buf);
 
                 // Parse the command (skip STX and don't care for ETX)
-                cmd = commandParser(++pui8_buf, ui8_msgSize-2);
+                cmd = commandParser(pui8_buf, ui8_msgSize);
 
                 rsp = executeCmd(&sci.sciCommands, &sci.varAccess, cmd);
 
@@ -107,13 +108,13 @@ void statemachine(void)
                 // Currently, the arduino won't send any response
                 if (rsp.b_valid)
                 {
-                    flushBuf(sci.txFIFO);
+                    flushBuf(&sci.txFIFO);
                     
                     // "Put" the date into the tx buffer
                     increaseBufIdx(&sci.txFIFO, responseBuilder(pui8_buf, rsp));
                     // TODO: Error handling -> Message too long
 
-                    if transmit(&sci.datalink, &sci.txFIFO);
+                    if (transmit(&sci.datalink, &sci.txFIFO))
                         sci.e_state = ePROTOCOL_SENDING;
                     // TODO: Error handling?
                     else 
@@ -251,7 +252,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
     uint8_t cmdIdArr[3] = {'?', '!', ':'};
 
     // Convert variable number to ASCII
-    ui8_size = ftoa(pui8_buf, static_cast<float>(response.i16_num), 0, true);
+    ui8_size = ftoa(pui8_buf, (float)response.i16_num, true);
 
     // Increase Buffer index
     pui8_buf += ui8_size;
@@ -259,7 +260,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
     ui8_size++;
 
     // Write the data value into the buffer
-    ui8_size += ftoa(pui8_buf, response.f_val, 5 ,true);
+    ui8_size += ftoa(pui8_buf, response.f_val, true);
 
     return ui8_size;
 }
