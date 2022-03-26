@@ -85,7 +85,7 @@ typedef struct
 }SCI_CALLBACKS;
 
 #ifdef DEBUG_FUNCTIONS
-#define SCI_DEFAULT {   {ePROTOCOL_IDLE, false, false, eDEBUG_ACTIVATION_NONE, {NULL}},\
+#define SCI_DEFAULT {   ePROTOCOL_IDLE, false, false, eDEBUG_ACTIVATION_NONE, {NULL}},\
                         {0},{0}\
                         FIFO_BUF_DEFAULT,\
                         FIFO_BUF_DEFAULT,\
@@ -94,7 +94,7 @@ typedef struct
                         VAR_ACCESS_DEFAULT,\
                         NULL}
 #else
-#define SCI_DEFAULT {   {ePROTOCOL_IDLE, false, false,\
+#define SCI_DEFAULT {   ePROTOCOL_IDLE, false, false,\
                         {0},{0}\
                         FIFO_BUF_DEFAULT,\
                         FIFO_BUF_DEFAULT,\
