@@ -15,6 +15,7 @@
 
 #include "SCI.h"
 #include "SCICommands.h"
+#include "CommandStucture.h"
 #include "Helpers.h"
 #include "Variables.h"
 #include "Buffer.h"
@@ -27,28 +28,42 @@ static SCI sci = SCI_DEFAULT;
 /******************************************************************************
  * Function definitions
  *****************************************************************************/
+
 //=============================================================================
-void setupCallbacks(TX_CB transmit_cb, READEEPROM_CB readEEPROM_cb, WRITEEEPROM_CB writeEEPROM_cb)
+void SCIinit(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
 {
-    txCallback                              = transmit_cb;
-    cmdModule.varAccess.readEEPROM_cb       = readEEPROM_cb;
-    cmdModule.varAccess.writeEEPROM_cb      = writeEEPROM_cb;
+    // Initialize the callbacks
+    sci.varAccess.readEEPROM_cb = callbacks.readEEPROMCallback;
+    sci.varAccess.writeEEPROM_cb = callbacks.writeEEPROMCallback;
+    sci.datalink.txCallback = callbacks.transmitCallback;
+
+    // Hand over the pointers to the var and cmd structs
+    sci.varAccess.p_varStruct = p_varStruct;
+    sci.sciCommands.p_cmdCBStruct = p_cmdStruct;
 }
 
 //=============================================================================
-void setupVariableStructure(VAR *p_varStruct, uint8_t ui8_structLen)
-{
-    cmdModule.varAccess.p_varStruct = p_varStruct;
-    cmdModule.varAccess.ui8_varStructLength = ui8_structLen;
-    cmdModule.varAccess.initVarstruct();
-}
+// void setupCallbacks(TX_CB transmit_cb, READEEPROM_CB readEEPROM_cb, WRITEEEPROM_CB writeEEPROM_cb)
+// {
+//     txCallback                              = transmit_cb;
+//     cmdModule.varAccess.readEEPROM_cb       = readEEPROM_cb;
+//     cmdModule.varAccess.writeEEPROM_cb      = writeEEPROM_cb;
+// }
+
+// //=============================================================================
+// void setupVariableStructure(VAR *p_varStruct, uint8_t ui8_structLen)
+// {
+//     cmdModule.varAccess.p_varStruct = p_varStruct;
+//     cmdModule.varAccess.ui8_varStructLength = ui8_structLen;
+//     cmdModule.varAccess.initVarstruct();
+// }
 
 //=============================================================================
-void setupCommandStructure(COMMAND_CB *p_cmdStruct, uint8_t ui8_structLen)
-{
-    cmdModule.p_cmdCBStruct = p_cmdStruct;
-    cmdModule.ui8_cmdCBStructLength = ui8_structLen;
-}
+// void setupCommandStructure(COMMAND_CB *p_cmdStruct, uint8_t ui8_structLen)
+// {
+//     cmdModule.p_cmdCBStruct = p_cmdStruct;
+//     cmdModule.ui8_cmdCBStructLength = ui8_structLen;
+// }
 
 //=============================================================================
 void receiveData(uint8_t ui8_data)

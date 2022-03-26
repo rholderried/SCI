@@ -65,10 +65,7 @@ typedef struct
  *****************************************************************************/
 typedef struct
 {
-    uint8_t ui8_cmdCBStructLength;  /*!< Remembers the length of the command callback structure.*/
     COMMAND_CB *p_cmdCBStruct;      /*!< Command callback structure.*/
-
-    // VarAccess varAccess = VarAccess(); /*!< Variable structure access methods.*/
 }SCI_COMMANDS;
 
 #define SCI_COMMANDS_DEFAULT    {0, NULL}

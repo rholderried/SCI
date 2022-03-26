@@ -22,6 +22,8 @@
 #define RX_BUFFER_LENGTH    64
 #define TX_BUFFER_LENGTH    64
 
+#define SIZE_OF_VAR_STRUCT  10
+#define SIZE_OF_CMD_STRUCT  10
 #define MAX_NUMBER_OF_EEPROM_VARS 10
 
 
