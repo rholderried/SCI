@@ -30,17 +30,22 @@ static SCI sci = SCI_DEFAULT;
  *****************************************************************************/
 
 //=============================================================================
-void SCIinit(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
+void SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
 {
     // Initialize the callbacks
     sci.varAccess.readEEPROM_cb                 = callbacks.readEEPROMCallback;
     sci.varAccess.writeEEPROM_cb                = callbacks.writeEEPROMCallback;
-    sci.datalink.txCallback                     = callbacks.transmitCallback;
+    sci.datalink.txBlockingCallback             = callbacks.transmitBlockingCallback;
+    sci.datalink.txNonBlockingCallback          = callbacks.transmitNonBlockingCallback;
     sci.datalink.txGetBusyStateCallback         = callbacks.getTxBusyStateCallback;
 
     // Hand over the pointers to the var and cmd structs
     sci.varAccess.p_varStruct       = p_varStruct;
     sci.sciCommands.p_cmdCBStruct   = p_cmdStruct;
+
+    // Configure data structures
+    fifoBufInit(&sci.rxFIFO, sci.rxBuffer, RX_BUFFER_LENGTH);
+    fifoBufInit(&sci.txFIFO, sci.txBuffer, TX_BUFFER_LENGTH);
 }
 
 //=============================================================================
@@ -67,7 +72,7 @@ void SCIinit(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
 // }
 
 //=============================================================================
-void receiveData(uint8_t ui8_data)
+void SCI_receiveData(uint8_t ui8_data)
 {
     // Call the lower level datalink level functionality
     receive(&sci.datalink, &sci.rxFIFO, ui8_data);
@@ -75,7 +80,7 @@ void receiveData(uint8_t ui8_data)
 
 
 //=============================================================================
-void statemachine(void)
+void SCI_statemachine(void)
 {
     // Check the lower level datalink states and set the protocol state accordingly
     if (sci.e_state > ePROTOCOL_ERROR)
@@ -99,6 +104,9 @@ void statemachine(void)
                 RESPONSE    rsp; 
                 uint8_t     ui8_msgSize = readBuf(&sci.rxFIFO, &pui8_buf);
 
+                // Clear Datalink State
+                acknowledgeRx(&sci.datalink);
+
                 // Parse the command (skip STX and don't care for ETX)
                 cmd = commandParser(pui8_buf, ui8_msgSize);
 
@@ -111,6 +119,7 @@ void statemachine(void)
                     flushBuf(&sci.txFIFO);
                     
                     // "Put" the date into the tx buffer
+                    pui8_buf = sci.txBuffer;
                     increaseBufIdx(&sci.txFIFO, responseBuilder(pui8_buf, rsp));
                     // TODO: Error handling -> Message too long
 

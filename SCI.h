@@ -87,10 +87,11 @@ typedef struct
 
 typedef struct
 {
-    WRITEEEPROM_CB writeEEPROMCallback;         /*!< Callback for writing data into the EEPROM. */
-    READEEPROM_CB readEEPROMCallback;           /*!< Callback for reading data from the EEPROM. */
-    TX_CB transmitCallback;                     /*!< Callback for the data transmission driver. */
-    GET_BUSY_STATE_CB getTxBusyStateCallback;   /*!< Callback for polling the busy state of the transmitter. */
+    WRITEEEPROM_CB writeEEPROMCallback;             /*!< Callback for writing data into the EEPROM. */
+    READEEPROM_CB readEEPROMCallback;               /*!< Callback for reading data from the EEPROM. */
+    BLOCKING_TX_CB transmitBlockingCallback;        /*!< Callback for the data transmission driver. Blocking. */
+    NONBLOCKING_TX_CB transmitNonBlockingCallback;  /*!< Callback for the data transmission driver. Blocking. */
+    GET_BUSY_STATE_CB getTxBusyStateCallback;       /*!< Callback for polling the busy state of the transmitter. */
 }SCI_CALLBACKS;
 
 
@@ -100,7 +101,7 @@ typedef struct
  *****************************************************************************/
 /** \brief Initialize protocol functionality.
  */
-void SCIinit(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct);
+void SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct);
 
 /** \brief Take and save the function pointers to the user-defined callbacks.
  *
@@ -129,13 +130,13 @@ void SCIinit(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
  * This function must be called in a cyclic manner for proper operation
  * of the serial protocol.
  */
-void statemachine   (void);
+void SCI_statemachine   (void);
 
 /** \brief Receive method.
  *
  * @param ui8_data  Received data byte to be processed within the proocol.
  */
-void receiveData    (uint8_t ui8_data);
+void SCI_receiveData    (uint8_t ui8_data);
 
 /** \brief Parses incoming message strings.
  *

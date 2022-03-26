@@ -90,7 +90,7 @@ typedef struct
     ACTION_PROCEDURE ap;
 }VAR;
 
-#define VAR_DEFAULT {NULL, eVARTYPE_NONE, eDTYPE_UINT8, {0, 0}, NULL}
+#define VAR_DEFAULT {NULL, eVARTYPE_NONE, eDTYPE_UINT8, NULL}
 
 typedef struct
 {

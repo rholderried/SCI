@@ -41,6 +41,14 @@ typedef struct
 /******************************************************************************
  * Function declaration
  *****************************************************************************/
+/** \brief Initializes the buffer structure
+ *
+ * @param *p_inst   Pointer to the buffer data structure
+ * @param *pui8_buf Pointer to the start of the buffer space
+ * @param ui8_bufLen Desired length of the buffer
+ */
+void fifoBufInit(FIFO_BUF* p_inst, uint8_t *pui8_buf, uint8_t ui8_bufLen);
+
 /** \brief Puts one byte into the buffer
  *
  * @param data Data byte

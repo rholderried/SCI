@@ -14,7 +14,15 @@
 /******************************************************************************
  * Function definitions
  *****************************************************************************/
+void fifoBufInit(FIFO_BUF* p_inst, uint8_t *pui8_buf, uint8_t ui8_bufLen)
+{
+    p_inst->b_ovfl = false;
+    p_inst->ui8_bufLen = ui8_bufLen;
+    p_inst->ui8_bufSpace = ui8_bufLen;
+    p_inst->pui8_bufPtr = pui8_buf;
+}
 
+//=============================================================================
 void putElem(FIFO_BUF* p_inst, uint8_t ui8_data)
 {
     // Put the data into the buffer only when it is not going to be overflowed

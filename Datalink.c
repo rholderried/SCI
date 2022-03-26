@@ -15,6 +15,7 @@
 #include <stddef.h>
 #include "DataLink.h"
 #include "Buffer.h"
+#include "SCIconfig.h"
 
 /******************************************************************************
  * Function definitions
@@ -108,8 +109,13 @@ DATALINK_TRANSMIT_STATE getDatalinkTransmitState(DATALINK *p_inst)
 bool transmit(DATALINK *p_inst, FIFO_BUF * p_tBuf)
 {
     // We can't send without the proper callbacks
-    if (p_inst->txCallback == NULL || p_inst->txGetBusyStateCallback == NULL)
+    #ifndef SEND_MODE_BYTE_BY_BYTE
+    if (p_inst->txNonBlockingCallback == NULL || p_inst->txGetBusyStateCallback == NULL)
         return (false);
+    #endif
+    if (p_inst->txBlockingCallback == NULL)
+        return (false);
+    
 
     if (p_inst->tState == eDATALINK_TSTATE_IDLE)
     {
@@ -123,7 +129,7 @@ bool transmit(DATALINK *p_inst, FIFO_BUF * p_tBuf)
 //=============================================================================
 void transmitStateMachine(DATALINK *p_inst)
 {    
-    if (p_inst->txGetBusyStateCallback())
+    if (p_inst->txGetBusyStateCallback != NULL)
         if (p_inst->txGetBusyStateCallback())
             return;
 
@@ -132,26 +138,44 @@ void transmitStateMachine(DATALINK *p_inst)
         case eDATALINK_TSTATE_SEND_STX:
             {
                 uint8_t ui8_data = STX;
-                p_inst->txCallback(&ui8_data, 1);
+                p_inst->txBlockingCallback(&ui8_data, 1);
                 p_inst->tState = eDATALINK_TSTATE_SEND_BUFFER;
             }
             break;
 
         case eDATALINK_TSTATE_SEND_BUFFER:
             {   
-                uint8_t ui8_sent = p_inst->txCallback(p_inst->txInfo.pui8_buf, p_inst->txInfo.ui8_bufLen);
-                p_inst->txInfo.ui8_bufLen -= ui8_sent;
-                p_inst->txInfo.pui8_buf += ui8_sent;
+                #ifdef SEND_MODE_BYTE_BY_BYTE
+                p_inst->txBlockingCallback(p_inst->txInfo.pui8_buf++, 1);
+                p_inst->txInfo.ui8_bufLen--;
 
                 if (p_inst->txInfo.ui8_bufLen == 0)
+                {
+                
+                #else
+                if (!p_inst->txGetBusyStateCallback())
+                {
+                    if (p_inst->txInfo.ui8_bufLen > 0)
+                    {
+                        p_inst->txNonBlockingCallback(p_inst->txInfo.pui8_buf, p_inst->txInfo.ui8_bufLen);
+                        p_inst->txInfo.ui8_bufLen = 0;
+                    }
+                    else
+                    {
+                #endif   
                     p_inst->tState = eDATALINK_TSTATE_SEND_ETX;
+                }
+                #ifndef SEND_MODE_BYTE_BY_BYTE
+                }
+                #endif
+                
             }
             break;
 
         case eDATALINK_TSTATE_SEND_ETX:
             {
                 uint8_t ui8_data = ETX;
-                p_inst->txCallback(&ui8_data, 1);
+                p_inst->txBlockingCallback(&ui8_data, 1);
                 p_inst->tState = eDATALINK_TSTATE_READY;
             }
             break;
@@ -159,6 +183,12 @@ void transmitStateMachine(DATALINK *p_inst)
         default:
             break;
     }
+}
+
+//=============================================================================
+void acknowledgeRx(DATALINK *p_inst)
+{
+    p_inst->rState = eDATALINK_RSTATE_IDLE;
 }
 
 //=============================================================================

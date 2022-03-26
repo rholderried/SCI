@@ -30,7 +30,8 @@
  *****************************************************************************/
 
 typedef void(*DBG_FCN_CB)(void);
-typedef uint8_t(*TX_CB)(uint8_t*, uint8_t);
+typedef void(*BLOCKING_TX_CB)(uint8_t*, uint8_t);
+typedef uint8_t(*NONBLOCKING_TX_CB)(uint8_t*, uint8_t);
 typedef bool(*GET_BUSY_STATE_CB)(void);
 
 typedef enum
@@ -74,7 +75,8 @@ typedef struct
     DATALINK_DBGACT_STATE dbgActState;
 
     DBG_FCN_CB dbgFcnArray[MAX_NUMBER_OF_DBG_FUNCTIONS];
-    TX_CB txCallback;
+    BLOCKING_TX_CB txBlockingCallback;
+    NONBLOCKING_TX_CB txNonBlockingCallback;
     GET_BUSY_STATE_CB txGetBusyStateCallback;
 
     struct 
@@ -85,7 +87,7 @@ typedef struct
 
 }DATALINK;
 
-#define DATALINK_DEFAULT {eDATALINK_RSTATE_IDLE, eDATALINK_TSTATE_IDLE, eDATALINK_DBGSTATE_IDLE, {NULL}, NULL, NULL, {NULL, 0}}
+#define DATALINK_DEFAULT {eDATALINK_RSTATE_IDLE, eDATALINK_TSTATE_IDLE, eDATALINK_DBGSTATE_IDLE, {NULL}, NULL, NULL, NULL, {NULL, 0}}
 
 
 
@@ -98,6 +100,7 @@ DATALINK_TRANSMIT_STATE getDatalinkTransmitState(DATALINK *p_inst);
 
 bool transmit(DATALINK *p_inst, FIFO_BUF * p_tBuf);//uint8_t *pui8_buf, uint8_t ui8_bufLen);
 void transmitStateMachine(DATALINK *p_inst);
+void acknowledgeRx(DATALINK *p_inst);
 void acknowledgeTx(DATALINK *p_inst);
 
 
