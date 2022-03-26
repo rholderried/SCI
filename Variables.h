@@ -94,7 +94,6 @@ typedef struct
 
 typedef struct
 {
-    uint8_t ui8_varStructLength;    /*!< Remembers the length of the variable structure.*/
     VAR     *p_varStruct;           /*!< Remembers the address of the variable structure.*/
 
     WRITEEEPROM_CB  writeEEPROM_cb;  /*!< Gets called in case of a EEPROM variable has been writen by command.*/

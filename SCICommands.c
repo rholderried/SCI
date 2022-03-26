@@ -16,6 +16,7 @@
 #include <stddef.h>
 #include "SCICommands.h"
 #include "Variables.h"
+#include "SCIconfig.h"
 
 /******************************************************************************
  * Function definitions
@@ -94,7 +95,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAN
                 bool cmdSuccess = false;
 
                 // Check if a command structure has been passed
-                if (p_sciCommands->p_cmdCBStruct != NULL && cmd.i16_num > 0 && cmd.i16_num <= p_sciCommands->ui8_cmdCBStructLength)
+                if (p_sciCommands->p_cmdCBStruct != NULL && cmd.i16_num > 0 && cmd.i16_num <= SIZE_OF_CMD_STRUCT)
                 {
                     // TODO: Support for passing values to the command function
                     cmdSuccess = p_sciCommands->p_cmdCBStruct[cmd.i16_num - 1](cmd.f_valArr,cmd.ui8_valArrLen);

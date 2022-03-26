@@ -33,7 +33,7 @@ bool initVarstruct(VAR_ACCESS* p_varAccess)
     uint8_t     ui8_incrementor = 0;
     uint8_t     ui8_actualEEIdx = 0;
 
-    for (uint8_t i = 0; i < p_varAccess->ui8_varStructLength; i++)
+    for (uint8_t i = 0; i < SIZE_OF_VAR_STRUCT; i++)
     {
         if (p_varAccess->p_varStruct[i].vartype == eVARTYPE_EEPROM)
         {
@@ -62,7 +62,7 @@ bool readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf
     int16_t i16_varIdx = i16_varNum - 1;
     bool b_success;
 
-    if (i16_varNum > 0 && i16_varNum <= p_varAccess->ui8_varStructLength)
+    if (i16_varNum > 0 && i16_varNum <= SIZE_OF_VAR_STRUCT)
     {
 
         switch (p_varAccess->p_varStruct[i16_varIdx].datatype)
@@ -102,7 +102,7 @@ bool writeValToVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float f_va
     int16_t i16_varIdx = i16_varNum - 1;
     bool b_success;
 
-    if (i16_varNum > 0 && i16_varNum <= p_varAccess->ui8_varStructLength)
+    if (i16_varNum > 0 && i16_varNum <= SIZE_OF_VAR_STRUCT)
     {
 
         switch (p_varAccess->p_varStruct[i16_varIdx].datatype)
