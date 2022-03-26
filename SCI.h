@@ -84,25 +84,13 @@ typedef struct
     TX_CB transmitCallback;             /*!< Callback for the data transmission driver. */
 }SCI_CALLBACKS;
 
-#ifdef DEBUG_FUNCTIONS
-#define SCI_DEFAULT {   ePROTOCOL_IDLE, false, false, eDEBUG_ACTIVATION_NONE, {NULL}},\
-                        {0},{0}\
+
+#define SCI_DEFAULT {   ePROTOCOL_IDLE,\
                         FIFO_BUF_DEFAULT,\
                         FIFO_BUF_DEFAULT,\
                         DATALINK_DEFAULT,\
                         SCI_COMMANDS_DEFAULT,\
-                        VAR_ACCESS_DEFAULT,\
-                        NULL}
-#else
-#define SCI_DEFAULT {   ePROTOCOL_IDLE, false, false,\
-                        {0},{0}\
-                        FIFO_BUF_DEFAULT,\
-                        FIFO_BUF_DEFAULT,\
-                        DATALINK_DEFAULT,\
-                        SCI_COMMANDS_DEFAULT,\
-                        VAR_ACCESS_DEFAULT,\
-                        NULL}
-#endif
+                        VAR_ACCESS_DEFAULT}
 
 /******************************************************************************
  * Function definitions
