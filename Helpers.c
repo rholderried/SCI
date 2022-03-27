@@ -18,6 +18,8 @@
  * Global variables definitions
  *****************************************************************************/
 const uint32_t ui32_pow10[10] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000 };
+const uint8_t hexNibbleConv[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+
 
 /******************************************************************************
  * Function definitions
@@ -128,4 +130,90 @@ uint8_t ftoa (uint8_t *pui8_resBuf, float val, bool b_round)
         }
     }
     return ui8_size;
+}
+
+//=============================================================================
+bool strToHex (uint8_t *pui8_strBuf, uint32_t *pui32_val)
+{
+    int8_t i = 0;
+    int8_t j = 0;
+    uint32_t ui32_hexVal = 0;
+    bool valid = true;
+
+    *pui32_val = 0;
+
+    // Determine number of passed digits
+    while (*pui8_strBuf++ != '\0')
+        i++;
+    
+    // Hex number cannot be greater than 8 nibbles
+    if (i>8)
+    {
+        valid = false;
+        goto terminate;
+    }
+
+    j=i;
+
+    // Set the buffer pointer on the least significant nibble
+    if (i > 0)
+        pui8_strBuf -= 2;
+    // If there was passed a string that was just holding a '\0', interpret as 0
+    else
+    {
+        *pui32_val = 0;
+        goto terminate;
+    }
+
+    while (i > 0)
+    {
+        if(*pui8_strBuf >='0' && *pui8_strBuf <= '9')
+            *pui32_val |= (*pui8_strBuf - '0') << ((j - i) * 4);
+        else if (*pui8_strBuf >= 'A' && *pui8_strBuf <= 'F')
+            *pui32_val |= (*pui8_strBuf - 'A' + 10) << ((j - i) * 4);
+        else
+        {
+            valid = false;
+            break;
+        }
+        i--;
+        pui8_strBuf--;
+    }
+
+    terminate: return valid;
+}
+
+//=============================================================================
+int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val)
+{
+    int8_t j = 7;
+    int8_t numberOfDigits = 0;
+
+    // Determine number of digits to pass (j holds this number afterwards)
+    while (j >= 0)
+    {
+        if((*pui32_val & (uint32_t)(0xF << (j * 4))) > 0)
+            break;
+        else
+            j--;
+    }
+
+    if (j < 0)
+    {
+        *pui8_strBuf = '0';
+        numberOfDigits = 1;
+        goto terminate;
+    }
+
+    numberOfDigits = j;
+
+    while (j >= 0)
+    {
+        pui8_strBuf[numberOfDigits - j] = hexNibbleConv[(*pui32_val & (uint32_t)(0xF << (j * 4))) >> (j * 4)];
+        j--;
+    }
+
+    numberOfDigits++;
+
+    terminate: return numberOfDigits;
 }

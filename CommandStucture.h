@@ -16,6 +16,7 @@
  *****************************************************************************/
 #include <stdint.h>
 #include <stdbool.h>
+#include "SCIconfig.h"
 
 /******************************************************************************
  * Type definitions
@@ -26,6 +27,10 @@
  * @param ui8_valArrayLen   Length of the value array.
  * @returns Command execution success indicator.
 */
+#ifdef VALUE_MODE_HEX
+typedef bool(*COMMAND_CB)(uint32_t* pui32_valArray, uint8_t ui8_valArrayLen);
+#else
 typedef bool(*COMMAND_CB)(float* pf_valArray, uint8_t ui8_valArrayLen);
+#endif
 
 #endif // _COMMANDSTRUCTURE_H_

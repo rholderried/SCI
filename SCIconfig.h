@@ -22,11 +22,12 @@
 #define RX_BUFFER_LENGTH    64
 #define TX_BUFFER_LENGTH    64
 
-#define SIZE_OF_VAR_STRUCT  1
+#define SIZE_OF_VAR_STRUCT  10
 #define SIZE_OF_CMD_STRUCT  10
 #define MAX_NUMBER_OF_EEPROM_VARS 10
 
 #define SEND_MODE_BYTE_BY_BYTE
+#define VALUE_MODE_HEX
 
 
 #endif // _SCICONFIG_H_

@@ -41,10 +41,14 @@ typedef enum
 /** \brief Command structure declaration.*/
 typedef struct
 {
-    int16_t         i16_num;                               /*!< ID Number.*/
-    uint8_t         ui8_valArrLen;                         /*!< Length of the value Array.*/
-    float           f_valArr[MAX_NUM_COMMAND_VALUES];      /*!< Pointer to the value array.*/
-    COMMAND_TYPE    e_cmdType;                             /*!< Command Type.*/
+    int16_t         i16_num;            /*!< ID Number.*/
+    uint8_t         ui8_valArrLen;      /*!< Length of the value Array.*/
+    union 
+    {
+        float           f_float;
+        uint32_t        ui32_hex;                         
+    }valArr[MAX_NUM_COMMAND_VALUES];    /*!< Pointer to the value array.*/
+    COMMAND_TYPE    e_cmdType;          /*!< Command Type.*/
 }COMMAND;
 
 #define COMMAND_DEFAULT         {0, 0, {0.0}, eCOMMAND_TYPE_NONE}
@@ -54,7 +58,11 @@ typedef struct
 {
     bool            b_valid;    /*!< Flags if response is valid and can be sent.*/
     int16_t         i16_num;    /*!< ID Number. (Reflects Command ID number).*/
-    float           f_val;      /*!< Response value.*/
+    union 
+    {
+        float       f_float;    
+        uint32_t    ui32_hex;   
+    }val;                       /*!< Response value.*/
     COMMAND_TYPE    e_cmdType;  /*!< Response type inherited from Command type.*/
 }RESPONSE;
 

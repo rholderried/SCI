@@ -44,7 +44,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAN
                     goto terminate;
                 
                 rsp.i16_num     = cmd.i16_num;
-                rsp.f_val       = f_val;
+                rsp.val.f_float = f_val;
                 rsp.e_cmdType   = cmd.e_cmdType;
                 rsp.b_valid     = true;
                 
@@ -61,7 +61,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAN
                     goto terminate;
 
                 // Read back actual value and write new one (write will only happen if read was successful)
-                if (!writeValToVarStruct(p_varAccess, cmd.i16_num, cmd.f_valArr[0]))
+                if (!writeValToVarStruct(p_varAccess, cmd.i16_num, cmd.valArr[0].f_float))
                     goto terminate;
 
                 // If the varStruct write operation was successful, trigger an EEPROM write (if callback present and variable is of type eVARTYPE_EEPROM)
@@ -84,7 +84,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAN
 
                 // If everything happens to be allright, create the response
                 rsp.i16_num     = cmd.i16_num;
-                rsp.f_val       = newVal;
+                rsp.val.f_float = newVal;
                 rsp.e_cmdType   = cmd.e_cmdType;
                 rsp.b_valid     = true;
             }
@@ -98,15 +98,18 @@ RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAN
                 if (p_sciCommands->p_cmdCBStruct != NULL && cmd.i16_num > 0 && cmd.i16_num <= SIZE_OF_CMD_STRUCT)
                 {
                     // TODO: Support for passing values to the command function
-                    cmdSuccess = p_sciCommands->p_cmdCBStruct[cmd.i16_num - 1](cmd.f_valArr,cmd.ui8_valArrLen);
+                    #ifdef VALUE_MODE_HEX
+                    cmdSuccess = p_sciCommands->p_cmdCBStruct[cmd.i16_num - 1](&cmd.valArr[0].ui32_hex,cmd.ui8_valArrLen);
+                    #else
+                    cmdSuccess = p_sciCommands->p_cmdCBStruct[cmd.i16_num - 1](&cmd.valArr[0].f_float,cmd.ui8_valArrLen);
+                    #endif
                 }
 
                 // Response is getting sent independently of command success
-                rsp.i16_num = cmd.i16_num;
-                rsp.e_cmdType = cmd.e_cmdType;
-                rsp.f_val = cmdSuccess ? 0 : 1;
-                rsp.b_valid = true;
-                
+                rsp.i16_num         = cmd.i16_num;
+                rsp.e_cmdType       = cmd.e_cmdType;
+                rsp.val.ui32_hex    = cmdSuccess ? 0 : 1;
+                rsp.b_valid         = true;
             }
             break;
 

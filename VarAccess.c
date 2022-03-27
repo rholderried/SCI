@@ -61,6 +61,18 @@ bool readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf
 {
     int16_t i16_varIdx = i16_varNum - 1;
     bool b_success;
+    union
+    {
+        uint8_t     ui8_val;
+        int8_t      i8_val;
+        uint16_t    ui16_val;
+        int16_t     i16_val;
+        uint32_t    ui32_val;
+        int32_t     i32_val;
+        float       f_val;
+    }ret;
+
+    ret.ui32_val = 0;
 
     if (i16_varNum > 0 && i16_varNum <= SIZE_OF_VAR_STRUCT)
     {
@@ -68,27 +80,52 @@ bool readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf
         switch (p_varAccess->p_varStruct[i16_varIdx].datatype)
         {
             case eDTYPE_UINT8:
-                *pf_val = (float)(*(uint8_t*)(p_varAccess->p_varStruct[i16_varIdx].val));
+                ret.ui8_val = *(uint8_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                #ifndef VALUE_MODE_HEX
+                *pf_val = (float)ret.ui8_val;
+                #endif
                 break;
             case eDTYPE_INT8:
-                *pf_val = (float)(*(int8_t*)(p_varAccess->p_varStruct[i16_varIdx].val));
+                ret.i8_val = *(int8_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                #ifndef VALUE_MODE_HEX
+                *pf_val = (float)ret.i8_val;
+                #endif
                 break;
             case eDTYPE_UINT16:
-                *pf_val = (float)(*(uint16_t*)(p_varAccess->p_varStruct[i16_varIdx].val));
+                ret.ui16_val = *(uint16_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                #ifndef VALUE_MODE_HEX
+                *pf_val = (float)ret.ui16_val;
+                #endif
                 break;
             case eDTYPE_INT16:
-                *pf_val = (float)(*(int16_t*)(p_varAccess->p_varStruct[i16_varIdx].val));
+                ret.i16_val = *(int16_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                #ifndef VALUE_MODE_HEX
+                *pf_val = (float)ret.i16_val;
+                #endif
                 break;
             case eDTYPE_UINT32:
-                *pf_val = (float)(*(uint32_t*)(p_varAccess->p_varStruct[i16_varIdx].val));
+                ret.ui32_val = *(uint32_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                #ifndef VALUE_MODE_HEX
+                *pf_val = (float)ret.ui32_val;
+                #endif
                 break;
             case eDTYPE_INT32:
-                *pf_val = (float)(*(int32_t*)(p_varAccess->p_varStruct[i16_varIdx].val));
+                ret.i32_val = *(int32_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                #ifndef VALUE_MODE_HEX
+                *pf_val = (float)ret.i32_val;
+                #endif
                 break;
             case eDTYPE_F32:
-                *pf_val = *(float*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                ret.f_val   = *(float*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                #ifndef VALUE_MODE_HEX
+                *pf_val = ret.f_val;
+                #endif
                 break;
         }
+
+        #ifdef VALUE_MODE_HEX
+        *pf_val = ret.f_val;
+        #endif
 
         b_success = true;
     }
@@ -102,28 +139,65 @@ bool writeValToVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float f_va
     int16_t i16_varIdx = i16_varNum - 1;
     bool b_success;
 
+    union
+    {
+        uint8_t     ui8_val;
+        int8_t      i8_val;
+        uint16_t    ui16_val;
+        int16_t     i16_val;
+        uint32_t    ui32_val;
+        int32_t     i32_val;
+        float       f_val;
+    }in;
+
+    in.f_val = f_val;
+
     if (i16_varNum > 0 && i16_varNum <= SIZE_OF_VAR_STRUCT)
     {
 
         switch (p_varAccess->p_varStruct[i16_varIdx].datatype)
         {
             case eDTYPE_UINT8:
-                *(uint8_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (uint8_t)(f_val);
+                #ifdef VALUE_MODE_HEX
+                *(uint8_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.ui8_val;
+                #else
+                *(uint8_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (uint8_t)f_val;
+                #endif
                 break;
             case eDTYPE_INT8:
-                *(int8_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (int8_t)(f_val);
+                #ifdef VALUE_MODE_HEX
+                *(int8_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.i8_val;
+                #else
+                *(int8_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (int8_t)f_val;
+                #endif
                 break;
             case eDTYPE_UINT16:
-                *(uint16_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (uint16_t)(f_val);
+                #ifdef VALUE_MODE_HEX
+                *(uint16_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.ui16_val;
+                #else
+                *(uint16_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (uint16_t)f_val;
+                #endif
                 break;
             case eDTYPE_INT16:
-                *(int16_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (int16_t)(f_val);
+                #ifdef VALUE_MODE_HEX
+                *(int16_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.i16_val;
+                #else
+                *(int16_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (int16_t)f_val;
+                #endif
                 break;
             case eDTYPE_UINT32:
-               *(uint32_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (uint32_t)(f_val);
+                #ifdef VALUE_MODE_HEX
+               *(uint32_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.ui32_val;
+               #else
+               *(uint32_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (uint32_t)f_val;
+               #endif
                break;
             case eDTYPE_INT32:
-                *(int32_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (int32_t)(f_val);
+                #ifdef VALUE_MODE_HEX
+                *(int32_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.i32_val;
+                #else
+                *(int32_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (int32_t)f_val;
+                #endif
                 break;
             case eDTYPE_F32:
                 *(float*)(p_varAccess->p_varStruct[i16_varIdx].val) = f_val;

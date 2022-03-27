@@ -32,12 +32,14 @@
  * 
  * @param   *pui8_resBuf    Pointer to the buffer which will be holding the result.
  * @param   val             Float value to be converted.
- * @param   maxAfterPoint   Maximum digits after the decimal point that will be accounted for.
  * @param   b_round         Value gets rounded according to the after point digits or not.
  * @returns Output string size in bytes.
  */
 uint8_t ftoa (uint8_t *pui8_resBuf, float val, bool b_round);
 
+bool strToHex (uint8_t *pui8_strBuf, uint32_t *pui32_val);
+
+int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val);
 
 
 #endif // _HELPERS_H_
