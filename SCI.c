@@ -31,7 +31,7 @@ static SCI sci = SCI_DEFAULT;
  *****************************************************************************/
 
 //=============================================================================
-void SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
+bool SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
 {
     // Initialize the callbacks
     sci.varAccess.readEEPROM_cb                 = callbacks.readEEPROMCallback;
@@ -47,30 +47,10 @@ void SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct
     // Configure data structures
     fifoBufInit(&sci.rxFIFO, sci.rxBuffer, RX_BUFFER_LENGTH);
     fifoBufInit(&sci.txFIFO, sci.txBuffer, TX_BUFFER_LENGTH);
+
+    // Initialize the variable structure
+    return (initVarstruct(&sci.varAccess));
 }
-
-//=============================================================================
-// void setupCallbacks(TX_CB transmit_cb, READEEPROM_CB readEEPROM_cb, WRITEEEPROM_CB writeEEPROM_cb)
-// {
-//     txCallback                              = transmit_cb;
-//     cmdModule.varAccess.readEEPROM_cb       = readEEPROM_cb;
-//     cmdModule.varAccess.writeEEPROM_cb      = writeEEPROM_cb;
-// }
-
-// //=============================================================================
-// void setupVariableStructure(VAR *p_varStruct, uint8_t ui8_structLen)
-// {
-//     cmdModule.varAccess.p_varStruct = p_varStruct;
-//     cmdModule.varAccess.ui8_varStructLength = ui8_structLen;
-//     cmdModule.varAccess.initVarstruct();
-// }
-
-//=============================================================================
-// void setupCommandStructure(COMMAND_CB *p_cmdStruct, uint8_t ui8_structLen)
-// {
-//     cmdModule.p_cmdCBStruct = p_cmdStruct;
-//     cmdModule.ui8_cmdCBStructLength = ui8_structLen;
-// }
 
 //=============================================================================
 void SCI_receiveData(uint8_t ui8_data)

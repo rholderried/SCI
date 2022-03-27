@@ -20,15 +20,14 @@
 #include <stdint.h>
 #include "SCIconfig.h"
 
-
 /******************************************************************************
  * defines
  *****************************************************************************/
-#define EEPROM_BYTE_ADRESSABLE      1
-#define EEPROM_WORD_ADRESSABLE      2
-#define EEPROM_LONG_ADRESSABLE      4
+#define EEPROM_ADDR_BYTE      1
+#define EEPROM_ADDR_WORD      2
+#define EEPROM_ADDR_LONG      4
 
-#define EEPROM_ADDRESSTYPE_DEFAULT    EEPROM_BYTE_ADRESSABLE
+#define EEPROM_ADDRESSTYPE_DEFAULT    EEPROM_ADDR_BYTE
 
 #ifndef EEPROM_ADDRESSTYPE
 #define EEPROM_ADDRESSTYPE EEPROM_ADDRESSTYPE_DEFAULT
@@ -147,7 +146,7 @@ bool readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
 
-uint16_t getEEPROMAdress(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
+uint16_t getEEPROMAddress(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
 /******************************************************************************
  * Global variable declaration

@@ -94,6 +94,8 @@ typedef struct
     GET_BUSY_STATE_CB getTxBusyStateCallback;       /*!< Callback for polling the busy state of the transmitter. */
 }SCI_CALLBACKS;
 
+#define SCI_CALLBACKS_DEFAULT {NULL}
+
 
 
 /******************************************************************************
@@ -101,7 +103,7 @@ typedef struct
  *****************************************************************************/
 /** \brief Initialize protocol functionality.
  */
-void SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct);
+bool SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct);
 
 /** \brief Take and save the function pointers to the user-defined callbacks.
  *

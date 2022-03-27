@@ -45,7 +45,7 @@ bool initVarstruct(VAR_ACCESS* p_varAccess)
             p_varAccess->eepromPartitionTable[ui8_actualEEIdx].ui16_address = ui16_currentEEVarAddress;
 
             ui8_actualEEIdx++;
-
+            //writeEEPROMwithValueFromVarStruct(p_varAccess, i + 1);
             readEEPROMValueIntoVarStruct(p_varAccess, i + 1);
 
             ui8_incrementor = ui8_byteLength[p_varAccess->p_varStruct[i].datatype] / EEPROM_ADDRESSTYPE;
@@ -239,7 +239,7 @@ bool readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
 
 
         // Look for the partition table index of the eeprom var
-        ui16_eepromAddress = getEEPROMAdress(p_varAccess, i16_varNum);
+        ui16_eepromAddress = getEEPROMAddress(p_varAccess, i16_varNum);
 
         successIndicator = ~(ui16_eepromAddress == EEEPROM_ADDRESS_ILLEGAL);
 
@@ -311,7 +311,7 @@ bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varN
     if (p_varAccess->p_varStruct[i16_varNum - 1].vartype == eVARTYPE_EEPROM && p_varAccess->writeEEPROM_cb != NULL)
     {
         // Look for the partition table index of the eeprom var
-        ui16_eepromAddress = getEEPROMAdress(p_varAccess, i16_varNum);
+        ui16_eepromAddress = getEEPROMAddress(p_varAccess, i16_varNum);
 
         successIndicator = ~(ui16_eepromAddress == EEEPROM_ADDRESS_ILLEGAL);
 
@@ -373,7 +373,7 @@ bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varN
 }
 
 //=============================================================================
-uint16_t getEEPROMAdress(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
+uint16_t getEEPROMAddress(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
 {
     uint16_t ui16_address = EEEPROM_ADDRESS_ILLEGAL;
     uint8_t ui8_idx = 0;
