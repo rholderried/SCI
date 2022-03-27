@@ -86,7 +86,7 @@ void SCI_statemachine(void)
     if (sci.e_state > ePROTOCOL_ERROR)
     {
         if (sci.e_state < ePROTOCOL_EVALUATING)
-            sci.e_state = getDatalinkReceiveState(&sci.datalink);
+            sci.e_state = (PROTOCOL_STATE)getDatalinkReceiveState(&sci.datalink);
         // else
         //     sci.e_state = sci.datalink.tState;
     }

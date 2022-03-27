@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "Unit Test Build",
+            "command": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\g++.exe",
+            "args": [
+                "-g",
+                "${workspaceFolder}\\*.c",
+                "${workspaceFolder}\\Test\\*.c",
+                "-o",
+                "${workspaceFolder}\\Test\\UnitTest.exe",
+                "-I",
+                "${workspaceFolder}",
+                "-I",
+                "${workspaceFolder}\\Test"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "compiler: \"C:\\Program Files\\mingw-w64\\x86_64-8.1.0-posix-seh-rt_v6-rev0\\mingw64\\bin\\gcc.exe\""
+        }
+    ]
+}
