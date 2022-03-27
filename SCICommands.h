@@ -51,7 +51,7 @@ typedef struct
     COMMAND_TYPE    e_cmdType;          /*!< Command Type.*/
 }COMMAND;
 
-#define COMMAND_DEFAULT         {0, 0, {0.0}, eCOMMAND_TYPE_NONE}
+#define COMMAND_DEFAULT         {0, 0, {{.ui32_hex = 0}}, eCOMMAND_TYPE_NONE}
 
 /** \brief Response structure declaration.*/
 typedef struct
@@ -66,7 +66,7 @@ typedef struct
     COMMAND_TYPE    e_cmdType;  /*!< Response type inherited from Command type.*/
 }RESPONSE;
 
-#define RESPONSE_DEFAULT         {false, 0, 0.0, eCOMMAND_TYPE_NONE}
+#define RESPONSE_DEFAULT         {false, 0, {.ui32_hex = 0}, eCOMMAND_TYPE_NONE}
 
 /******************************************************************************
  * Type definitions

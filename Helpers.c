@@ -137,7 +137,6 @@ bool strToHex (uint8_t *pui8_strBuf, uint32_t *pui32_val)
 {
     int8_t i = 0;
     int8_t j = 0;
-    uint32_t ui32_hexVal = 0;
     bool valid = true;
 
     *pui32_val = 0;
