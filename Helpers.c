@@ -138,6 +138,7 @@ bool strToHex (uint8_t *pui8_strBuf, uint32_t *pui32_val)
     int8_t i = 0;
     int8_t j = 0;
     bool valid = true;
+    uint8_t k;
 
     *pui32_val = 0;
 
@@ -164,12 +165,15 @@ bool strToHex (uint8_t *pui8_strBuf, uint32_t *pui32_val)
         goto terminate;
     }
 
+    // Convert string (starting from least significant nibble) and directly write output value
     while (i > 0)
     {
+        k = (j - i) << 2; // k = (j - i) * 4
+
         if(*pui8_strBuf >='0' && *pui8_strBuf <= '9')
-            *pui32_val |= (*pui8_strBuf - '0') << ((j - i) * 4);
+            *pui32_val |= (*pui8_strBuf - '0') << k;
         else if (*pui8_strBuf >= 'A' && *pui8_strBuf <= 'F')
-            *pui32_val |= (*pui8_strBuf - 'A' + 10) << ((j - i) * 4);
+            *pui32_val |= (*pui8_strBuf - 'A' + 10) << k;
         else
         {
             valid = false;
@@ -187,8 +191,9 @@ int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val)
 {
     int8_t j = 7;
     int8_t numberOfDigits = 0;
+    uint8_t k;
 
-    // Determine number of digits to pass (j holds this number afterwards)
+    // Determine number of digits to pass
     while (j >= 0)
     {
         if((*pui32_val & ((uint32_t)0xF << (j * 4))) > 0)
@@ -197,6 +202,7 @@ int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val)
             j--;
     }
 
+    // Take care for the 0
     if (j < 0)
     {
         *pui8_strBuf = '0';
@@ -206,9 +212,11 @@ int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val)
 
     numberOfDigits = j;
 
+    // Convert number (Big endian format)
     while (j >= 0)
     {
-        pui8_strBuf[numberOfDigits - j] = hexNibbleConv[(*pui32_val & ((uint32_t)0xF << (j * 4))) >> (j * 4)];
+        k = j << 2; // k = j * 4
+        pui8_strBuf[numberOfDigits - j] = hexNibbleConv[(*pui32_val & ((uint32_t)0xF << k)) >> k];
         j--;
     }
 
