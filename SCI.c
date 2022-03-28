@@ -306,7 +306,9 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
                         #endif
                     }
                     
-                    ui8_size += fillBufferWithValues(&sci.sciCommands, pui8_buf, TX_PACKET_LENGTH - ui8_size);
+                    // Fill the rest of the packet with data
+                    if (sci.sciCommands.responseControl.b_ongoing)
+                        ui8_size += fillBufferWithValues(&sci.sciCommands, pui8_buf, TX_PACKET_LENGTH - ui8_size);
                 }
                 break;
 

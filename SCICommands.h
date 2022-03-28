@@ -77,7 +77,7 @@ typedef struct
 {
     struct
     {
-        bool        b_pending;
+        bool        b_ongoing;
         bool        b_firstPacketNotSent;
         uint16_t    ui16_typeIdx;
         uint32_t    ui32_valIdx;

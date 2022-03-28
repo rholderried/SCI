@@ -52,7 +52,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                 rsp.b_valid     = true;
                 
                 // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
-                p_inst->responseControl.b_pending = false;
+                p_inst->responseControl.b_ongoing = false;
             }
             break;
 
@@ -94,7 +94,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                 rsp.b_valid     = true;
 
                 // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
-                p_inst->responseControl.b_pending = false;
+                p_inst->responseControl.b_ongoing = false;
             }
             break;
         
@@ -103,7 +103,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                 COMMAND_CB_STATUS cmdStatus = eCOMMAND_STATUS_UNKNOWN;
                 PROCESS_INFO info = PROCESS_INFO_DEFAULT;
                 // Determine if a new command has been sent or if the ongoing command is to be processed
-                bool b_newCmd = p_inst->responseControl.b_pending == false || (p_inst->responseControl.rsp.i16_num != cmd.i16_num);
+                bool b_newCmd = p_inst->responseControl.b_ongoing == false || (p_inst->responseControl.rsp.i16_num != cmd.i16_num);
 
                 if (b_newCmd)
                 {
@@ -125,14 +125,26 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                     rsp.info            = info;
 
                     // Fill the response control struct
-                    p_inst->responseControl.b_pending               = true;
                     p_inst->responseControl.b_firstPacketNotSent    = true;
                     p_inst->responseControl.ui16_typeIdx            = 0;
                     p_inst->responseControl.ui32_valIdx             = 0;
-                    p_inst->responseControl.rsp                     = rsp;
-
+                    
                     if (cmdStatus != eCOMMAND_STATUS_ERROR && cmdStatus != eCOMMAND_STATUS_UNKNOWN)
+                    {
                         rsp.b_valid = true;
+
+                        if (rsp.info.ui32_datLen > 0 && 
+                            rsp.e_cmdStatus == eCOMMAND_STATUS_DATA_BYTES ||
+                            rsp.e_cmdStatus == eCOMMAND_STATUS_DATA_VALUES)
+                        {
+                            p_inst->responseControl.b_ongoing = true;
+                        }
+                        else
+                            p_inst->responseControl.b_ongoing = false;
+                    }
+                    // Save the response for later
+                    p_inst->responseControl.rsp                     = rsp;
+                    
                 }
                 else
                 {
