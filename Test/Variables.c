@@ -16,11 +16,15 @@ VAR varStruct[] = { {&testVar, eVARTYPE_RAM, eDTYPE_F32,NULL},           // Numb
                     {&ui16_test, eVARTYPE_RAM, eDTYPE_UINT16,NULL},   // Number 4
                     {&i32_test, eVARTYPE_RAM, eDTYPE_INT32,NULL}};    // Number 5
 
+uint8_t ui8_testBuffer[20] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 } ;
+
 
 #ifdef VALUE_MODE_HEX
 COMMAND_CB_STATUS testCmd (uint32_t* pui32_valArray, uint8_t ui8_valArrayLen, PROCESS_INFO *p_info)
 {
-    return eCOMMAND_STATUS_SUCCESS;
+    p_info->pui8_buf = ui8_testBuffer;
+    p_info->ui32_datLen = 20;
+    return eCOMMAND_STATUS_DATA_BYTES;
 }
 #else
 bool testCmd (float* pf_valArray, uint8_t ui8_valArrayLen)

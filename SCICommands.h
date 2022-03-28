@@ -99,6 +99,6 @@ typedef struct
  */
 RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAND cmd); 
 
-uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint32_t ui32_size);
+uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_maxSize);
 
 #endif //_COMMANDS_H_

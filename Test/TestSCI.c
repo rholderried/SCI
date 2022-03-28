@@ -33,22 +33,34 @@ void dummyTxCb(uint8_t * pui8_buf, uint8_t ui8_size)
     buf[ui8_size]='\0';
 
     printf(buf);
+    free(buf);
 }
 
 void TestSCI_generateReads(void)
 {
     // uint8_t ui8_msg[] = {2,'3','!','D','4',3};
-    // uint8_t ui8_msg[] = {2,'2',':','D','4',3};
+    uint8_t ui8_msg[] = {2,'1',':','D','4',3};
     //uint8_t ui8_msg[] = {2,'7','?','D','4',3};
-    uint8_t ui8_msg[] = {2,'7','D','4',3};
+    // uint8_t ui8_msg[] = {2,'7','D','4',3};
 
-    uint8_t ui8_loopCount = 20;
+    uint8_t ui8_loopCount = 100;
     
     {
         SCI_CALLBACKS cbs = {NULL, NULL, dummyTxCb, NULL, NULL};
         SCI_init(cbs, varStruct, cmdStruct);
     }
     
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg); i++)
+    {
+        SCI_receiveData(ui8_msg[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+
     // Dummy receive
     for(uint8_t i = 0; i < sizeof(ui8_msg); i++)
     {

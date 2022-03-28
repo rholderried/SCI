@@ -187,7 +187,7 @@ bool strToHex (uint8_t *pui8_strBuf, uint32_t *pui32_val)
 }
 
 //=============================================================================
-int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val, uint8_t ui8_maxDataNibbles)
+int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val, uint8_t ui8_maxDataNibbles, bool shrinkZeros)
 {
     int8_t j = 7;
     int8_t numberOfDigits = 0;
@@ -199,15 +199,18 @@ int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val, uint8_t ui8_maxDataN
     else
         j = ui8_maxDataNibbles - 1;
 
-    // Determine number of digits to pass
-    while (j >= 0)
+    if(shrinkZeros)
     {
-        if((*pui32_val & ((uint32_t)0xF << (j * 4))) > 0)
-            break;
-        else
-            j--;
+        // Determine number of digits to pass
+        while (j >= 0)
+        {
+            if((*pui32_val & ((uint32_t)0xF << (j * 4))) > 0)
+                break;
+            else
+                j--;
+        }
     }
-
+    
     // Take care for the 0
     if (j < 0)
     {

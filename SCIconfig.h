@@ -26,8 +26,8 @@
 /******************************************************************************
  * Defines
  *****************************************************************************/
-#define RX_PACKET_LENGTH    64
-#define TX_PACKET_LENGTH    64
+#define RX_PACKET_LENGTH    30
+#define TX_PACKET_LENGTH    30
 
 #define SIZE_OF_VAR_STRUCT  5
 #define SIZE_OF_CMD_STRUCT  1

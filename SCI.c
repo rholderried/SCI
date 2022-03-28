@@ -253,7 +253,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
 
     // Convert variable number to ASCII
     #ifdef VALUE_MODE_HEX
-    ui8_size = (uint8_t)hexToStr(pui8_buf, (uint32_t*)&response.i16_num, 4);
+    ui8_size = (uint8_t)hexToStr(pui8_buf, (uint32_t*)&response.i16_num, 4, true);
     #else
     ui8_size = ftoa(pui8_buf, (float)response.i16_num, true);
     #endif
@@ -270,7 +270,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
             case eCOMMAND_TYPE_GETVAR:
                 // Write the data value into the buffer
                 #ifdef VALUE_MODE_HEX
-                ui8_size += (uint8_t)hexToStr(pui8_buf, &response.val.ui32_hex, 8);
+                ui8_size += (uint8_t)hexToStr(pui8_buf, &response.val.ui32_hex, 8, true);
                 #else
                 ui8_size += ftoa(pui8_buf, response.val.f_float, true);
                 #endif
@@ -297,13 +297,19 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
                     // No datalength on every consecutive packet
                     if (sci.sciCommands.responseControl.b_firstPacketNotSent)
                     {
+                        uint8_t ui8_asciiSize;
+
                         *pui8_buf++ = ';';
                         ui8_size++;
                         #ifdef VALUE_MODE_HEX
-                        ui8_size += (uint8_t)hexToStr(pui8_buf, &response.info.ui32_datLen, 8);
+                        ui8_asciiSize = (uint8_t)hexToStr(pui8_buf, &response.info.ui32_datLen, 8, true);
                         #else
-                        ui8_size += ftoa(pui8_buf, (float)response.info.ui32_datLen, true);
+                        ui8_asciiSize = ftoa(pui8_buf, (float)response.info.ui32_datLen, true);
                         #endif
+                        pui8_buf += ui8_asciiSize;
+                        ui8_size += ui8_asciiSize;
+                        *pui8_buf++ = ';';
+                        ui8_size++;
                     }
                     
                     // Fill the rest of the packet with data
@@ -332,7 +338,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
             ui8_size ++;
             // Write the data value into the buffer
             #ifdef VALUE_MODE_HEX
-            ui8_size += (uint8_t)hexToStr(pui8_buf, (uint32_t*)&response.info.ui16_error, 4);
+            ui8_size += (uint8_t)hexToStr(pui8_buf, (uint32_t*)&response.info.ui16_error, 4, true);
             #else
             ui8_size += ftoa(pui8_buf, (float)response.info.ui16_error, true);
             #endif

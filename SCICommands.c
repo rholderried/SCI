@@ -17,6 +17,7 @@
 #include <string.h>
 #include "SCICommands.h"
 #include "Variables.h"
+#include "Helpers.h"
 #include "SCIconfig.h"
 
 
@@ -155,7 +156,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                     p_inst->responseControl.b_firstPacketNotSent = false;
                 }
 
-                if (cmdStatus != eCOMMAND_STATUS_ERROR && cmdStatus != eCOMMAND_STATUS_UNKNOWN)
+                if (rsp.e_cmdStatus != eCOMMAND_STATUS_ERROR && rsp.e_cmdStatus != eCOMMAND_STATUS_UNKNOWN)
                     rsp.b_valid = true;
             }
             break;
@@ -169,7 +170,29 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
 }
 
 //=============================================================================
-uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint32_t ui32_maxSize)
+uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_maxSize)
 {
+    uint8_t ui8_currentDataSize = 0;
+    uint8_t ui8_datBuf[8] = {0};
 
+    if (p_inst->responseControl.rsp.e_cmdStatus == eCOMMAND_STATUS_DATA_BYTES)
+    {
+        while (ui8_maxSize > (ui8_currentDataSize + 1) && p_inst->responseControl.rsp.info.ui32_datLen > 0)
+        {
+            ui8_currentDataSize += hexToStr(p_buf,(uint32_t*)&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_valIdx],2,false);
+            p_inst->responseControl.rsp.info.ui32_datLen--;
+            p_inst->responseControl.ui32_valIdx++;
+            p_buf += 2;
+        }
+    }
+    else if (p_inst->responseControl.rsp.e_cmdStatus == eCOMMAND_STATUS_DATA_VALUES)
+    {
+        ; // Currently not implemented
+    }
+
+    // Reset the ongoing flag when no data is left to transmit
+    if (p_inst->responseControl.rsp.info.ui32_datLen == 0)
+        p_inst->responseControl.b_ongoing = false;
+
+    return ui8_currentDataSize;
 }

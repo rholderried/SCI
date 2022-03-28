@@ -34,7 +34,7 @@ typedef enum
 
 typedef struct
 {
-    uint8_t  *ui8_buf;
+    uint8_t  *pui8_buf;
     uint32_t ui32_datLen;
     DTYPE    *eDataFormat;
     uint16_t ui16_dataFormatLen;
