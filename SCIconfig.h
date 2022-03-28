@@ -26,11 +26,11 @@
 /******************************************************************************
  * Defines
  *****************************************************************************/
-#define RX_BUFFER_LENGTH    64
-#define TX_BUFFER_LENGTH    64
+#define RX_PACKET_LENGTH    64
+#define TX_PACKET_LENGTH    64
 
-#define SIZE_OF_VAR_STRUCT  10
-#define SIZE_OF_CMD_STRUCT  10
+#define SIZE_OF_VAR_STRUCT  5
+#define SIZE_OF_CMD_STRUCT  1
 #define MAX_NUMBER_OF_EEPROM_VARS 10
 
 // Mode configuration
@@ -40,6 +40,9 @@
 // EEPROM configuration
 #define EEPROM_ADDRESSTYPE  EEPROM_WORD_ADDRESSABLE
 #define ADDRESS_OFFET       0
+
+// Send parameters
+#define MAX_COUNT_DATA_FORMATS  10
 
 
 #endif // _SCICONFIG_H_

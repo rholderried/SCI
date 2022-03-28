@@ -64,8 +64,8 @@ typedef struct
 {
     PROTOCOL_STATE  e_state;    /*!< Actual protocol state. */
 
-    uint8_t rxBuffer[RX_BUFFER_LENGTH];   /*!< RX buffer space. */ 
-    uint8_t txBuffer[TX_BUFFER_LENGTH];   /*!< TX buffer space. */ 
+    uint8_t rxBuffer[RX_PACKET_LENGTH];   /*!< RX buffer space. */ 
+    uint8_t txBuffer[TX_PACKET_LENGTH];   /*!< TX buffer space. */ 
 
     FIFO_BUF rxFIFO;  /*!< RX buffer management. */ 
     FIFO_BUF txFIFO;  /*!< TX buffer management. */

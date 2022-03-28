@@ -18,9 +18,9 @@ VAR varStruct[] = { {&testVar, eVARTYPE_RAM, eDTYPE_F32,NULL},           // Numb
 
 
 #ifdef VALUE_MODE_HEX
-bool testCmd (uint32_t* pui32_valArray, uint8_t ui8_valArrayLen)
+COMMAND_CB_STATUS testCmd (uint32_t* pui32_valArray, uint8_t ui8_valArrayLen, PROCESS_INFO *p_info)
 {
-    return true;
+    return eCOMMAND_STATUS_SUCCESS;
 }
 #else
 bool testCmd (float* pf_valArray, uint8_t ui8_valArrayLen)

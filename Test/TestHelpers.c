@@ -11,7 +11,7 @@ void TestHelpers_hexToStr(void)
     uint8_t ui8_testVal_3 = 0xF7;
     int8_t size = 0;
 
-    size = hexToStr(ui8_testBuf, (uint32_t*)&ui8_testVal_3);
+    size = hexToStr(ui8_testBuf, (uint32_t*)&ui8_testVal_3, 2);
     ui8_testBuf[size] = '\0';
 
     printf("Conversion Result: %s", (char*)ui8_testBuf);

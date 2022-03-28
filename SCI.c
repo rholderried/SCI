@@ -25,6 +25,9 @@
  * Global variable definition
  *****************************************************************************/
 static SCI sci = SCI_DEFAULT;
+// Note: The idizes correspond to the values of the COMMAND_CB_STATUS enum values!
+static const uint8_t responseDesignator [5][3] = {"ACK", "DAB", "DAV", "ERR", "NAK"};
+static const uint8_t cmdIdArr[4] = {'#', '?', '!', ':'};
 
 /******************************************************************************
  * Function definitions
@@ -45,8 +48,8 @@ bool SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct
     sci.sciCommands.p_cmdCBStruct   = p_cmdStruct;
 
     // Configure data structures
-    fifoBufInit(&sci.rxFIFO, sci.rxBuffer, RX_BUFFER_LENGTH);
-    fifoBufInit(&sci.txFIFO, sci.txBuffer, TX_BUFFER_LENGTH);
+    fifoBufInit(&sci.rxFIFO, sci.rxBuffer, RX_PACKET_LENGTH);
+    fifoBufInit(&sci.txFIFO, sci.txBuffer, TX_PACKET_LENGTH);
 
     // Initialize the variable structure
     return (initVarstruct(&sci.varAccess));
@@ -95,24 +98,19 @@ void SCI_statemachine(void)
 
                 // TODO: Error behaviour if there is no valid response
                 // Currently, the arduino won't send any response
-                if (rsp.b_valid)
-                {
-                    flushBuf(&sci.txFIFO);
-                    
-                    // "Put" the date into the tx buffer
-                    pui8_buf = sci.txBuffer;
-                    increaseBufIdx(&sci.txFIFO, responseBuilder(pui8_buf, rsp));
-                    // TODO: Error handling -> Message too long
 
-                    if (transmit(&sci.datalink, &sci.txFIFO))
-                        sci.e_state = ePROTOCOL_SENDING;
-                    // TODO: Error handling?
-                    else 
-                        sci.e_state = ePROTOCOL_IDLE;
-                }
-                else
-                    // TODO: Here, we'd better send a error notifier
-                    sci.e_state = ePROTOCOL_IDLE;   
+                flushBuf(&sci.txFIFO);
+                
+                // "Put" the date into the tx buffer
+                pui8_buf = sci.txBuffer;
+                increaseBufIdx(&sci.txFIFO, responseBuilder(pui8_buf, rsp));
+                // TODO: Error handling -> Message too long
+
+                if (transmit(&sci.datalink, &sci.txFIFO))
+                    sci.e_state = ePROTOCOL_SENDING;
+                // TODO: Error handling?
+                else 
+                    sci.e_state = ePROTOCOL_IDLE;  
             }
     
             break;
@@ -251,34 +249,96 @@ COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
 uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
 {
     uint8_t ui8_size    = 0;
-    uint8_t cmdIdArr[3] = {'?', '!', ':'};
-    union
-    {
-        int16_t     i16_num;
-        uint32_t    ui32_num;
-    }u_tmp;
-
-    u_tmp.ui32_num = 0;
+    
 
     // Convert variable number to ASCII
     #ifdef VALUE_MODE_HEX
-    u_tmp.i16_num = response.i16_num;
-    ui8_size = (uint8_t)hexToStr(pui8_buf, &u_tmp.ui32_num);
+    ui8_size = (uint8_t)hexToStr(pui8_buf, (uint32_t*)&response.i16_num, 4);
     #else
     ui8_size = ftoa(pui8_buf, (float)response.i16_num, true);
     #endif
 
-    // Increase Buffer index
+    // Increase Buffer index and write command type identifier
     pui8_buf += ui8_size;
     *pui8_buf++ = cmdIdArr[response.e_cmdType];
     ui8_size++;
 
-    // Write the data value into the buffer
-    #ifdef VALUE_MODE_HEX
-    ui8_size += (uint8_t)hexToStr(pui8_buf, &response.val.ui32_hex);
-    #else
-    ui8_size += ftoa(pui8_buf, response.val.f_float, true);
-    #endif
+    if (response.b_valid)
+    {
+        switch (response.e_cmdType)
+        {
+            case eCOMMAND_TYPE_GETVAR:
+                // Write the data value into the buffer
+                #ifdef VALUE_MODE_HEX
+                ui8_size += (uint8_t)hexToStr(pui8_buf, &response.val.ui32_hex, 8);
+                #else
+                ui8_size += ftoa(pui8_buf, response.val.f_float, true);
+                #endif
+                break;
+            
+            case eCOMMAND_TYPE_SETVAR:
+                // If we got here, the operation was successful
+                memcpy(pui8_buf, &responseDesignator[(uint8_t)eCOMMAND_STATUS_SUCCESS], 3);
+                pui8_buf+=3;
+                ui8_size += 3;
+                break;
+
+            case eCOMMAND_TYPE_COMMAND:
+                // No response designator on every consecutive packet
+                if (sci.sciCommands.responseControl.b_firstPacketNotSent)
+                {
+                    memcpy(pui8_buf, &responseDesignator[(uint8_t)response.e_cmdStatus], 3);
+                    pui8_buf+=3;
+                    ui8_size += 3;
+                }
+                
+                if (response.e_cmdStatus == eCOMMAND_STATUS_DATA_BYTES ||response.e_cmdStatus == eCOMMAND_STATUS_DATA_VALUES)
+                {
+                    // No datalength on every consecutive packet
+                    if (sci.sciCommands.responseControl.b_firstPacketNotSent)
+                    {
+                        *pui8_buf++ = ';';
+                        ui8_size++;
+                        #ifdef VALUE_MODE_HEX
+                        ui8_size += (uint8_t)hexToStr(pui8_buf, &response.info.ui32_datLen, 8);
+                        #else
+                        ui8_size += ftoa(pui8_buf, (float)response.info.ui32_datLen, true);
+                        #endif
+                    }
+                    
+                    ui8_size += fillBufferWithValues(&sci.sciCommands, pui8_buf, TX_PACKET_LENGTH - ui8_size);
+                }
+                break;
+
+            default:
+                break;
+        }
+    }
+    else
+    {
+        // We get here for example if there was no valid command identifier found
+        if (response.info.ui16_error == 0)
+        {
+            memcpy(pui8_buf, &responseDesignator[(uint8_t)eCOMMAND_STATUS_UNKNOWN], 3);
+            pui8_buf += 3;
+        }
+        else
+        {
+            memcpy(pui8_buf, &responseDesignator[(uint8_t)eCOMMAND_STATUS_ERROR], 3);
+            pui8_buf+=3;
+            *pui8_buf++ = ';';
+            ui8_size ++;
+            // Write the data value into the buffer
+            #ifdef VALUE_MODE_HEX
+            ui8_size += (uint8_t)hexToStr(pui8_buf, (uint32_t*)&response.info.ui16_error, 4);
+            #else
+            ui8_size += ftoa(pui8_buf, (float)response.info.ui16_error, true);
+            #endif
+        }
+
+        ui8_size += 3;
+    }
+
 
     return ui8_size;
 }

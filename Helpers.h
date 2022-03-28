@@ -39,7 +39,7 @@ uint8_t ftoa (uint8_t *pui8_resBuf, float val, bool b_round);
 
 bool strToHex (uint8_t *pui8_strBuf, uint32_t *pui32_val);
 
-int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val);
+int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val, uint8_t ui8_maxDataNibbles);
 
 
 #endif // _HELPERS_H_

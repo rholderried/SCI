@@ -187,11 +187,17 @@ bool strToHex (uint8_t *pui8_strBuf, uint32_t *pui32_val)
 }
 
 //=============================================================================
-int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val)
+int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val, uint8_t ui8_maxDataNibbles)
 {
     int8_t j = 7;
     int8_t numberOfDigits = 0;
     uint8_t k;
+
+    // Optionally restrict the data length
+    if (ui8_maxDataNibbles == 0 || ui8_maxDataNibbles > 8)
+        j = 7;
+    else
+        j = ui8_maxDataNibbles - 1;
 
     // Determine number of digits to pass
     while (j >= 0)

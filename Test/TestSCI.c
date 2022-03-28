@@ -37,7 +37,11 @@ void dummyTxCb(uint8_t * pui8_buf, uint8_t ui8_size)
 
 void TestSCI_generateReads(void)
 {
-    uint8_t ui8_msg[] = {2,'3','!','D','4',3};
+    // uint8_t ui8_msg[] = {2,'3','!','D','4',3};
+    // uint8_t ui8_msg[] = {2,'2',':','D','4',3};
+    //uint8_t ui8_msg[] = {2,'7','?','D','4',3};
+    uint8_t ui8_msg[] = {2,'7','D','4',3};
+
     uint8_t ui8_loopCount = 20;
     
     {

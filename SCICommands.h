@@ -31,10 +31,10 @@
 /** \brief Command type enumeration.*/
 typedef enum 
 {
-    eCOMMAND_TYPE_NONE      =   -1,
-    eCOMMAND_TYPE_GETVAR    =   0,
-    eCOMMAND_TYPE_SETVAR    =   1,
-    eCOMMAND_TYPE_COMMAND   =   2
+    eCOMMAND_TYPE_NONE      =   0,
+    eCOMMAND_TYPE_GETVAR    =   1,
+    eCOMMAND_TYPE_SETVAR    =   2,
+    eCOMMAND_TYPE_COMMAND   =   3
 }COMMAND_TYPE;
 
 
@@ -56,27 +56,38 @@ typedef struct
 /** \brief Response structure declaration.*/
 typedef struct
 {
-    bool            b_valid;    /*!< Flags if response is valid and can be sent.*/
-    int16_t         i16_num;    /*!< ID Number. (Reflects Command ID number).*/
+    bool                b_valid;    /*!< Flags if response is valid and can be sent.*/
+    int16_t             i16_num;    /*!< ID Number. (Reflects Command ID number).*/
     union 
     {
-        float       f_float;    
-        uint32_t    ui32_hex;   
-    }val;                       /*!< Response value.*/
-    COMMAND_TYPE    e_cmdType;  /*!< Response type inherited from Command type.*/
+        float           f_float;    
+        uint32_t        ui32_hex;   
+    }val;                           /*!< Response value.*/
+    COMMAND_TYPE        e_cmdType;  /*!< Response type inherited from Command type.*/
+    COMMAND_CB_STATUS   e_cmdStatus;/*!< Status returned by the command callback.*/
+    PROCESS_INFO        info;       /*!< Additional command processing info.*/
 }RESPONSE;
 
-#define RESPONSE_DEFAULT         {false, 0, {.ui32_hex = 0}, eCOMMAND_TYPE_NONE}
+#define RESPONSE_DEFAULT         {false, 0, {.ui32_hex = 0}, eCOMMAND_TYPE_NONE, eCOMMAND_STATUS_UNKNOWN, PROCESS_INFO_DEFAULT}
 
 /******************************************************************************
  * Type definitions
  *****************************************************************************/
 typedef struct
 {
+    struct
+    {
+        bool        b_pending;
+        bool        b_firstPacketNotSent;
+        uint16_t    ui16_typeIdx;
+        uint32_t    ui32_valIdx;
+        RESPONSE    rsp;
+    }responseControl;
+
     COMMAND_CB *p_cmdCBStruct;      /*!< Command callback structure.*/
 }SCI_COMMANDS;
 
-#define SCI_COMMANDS_DEFAULT    {NULL}
+#define SCI_COMMANDS_DEFAULT    {{false, true, 0, 0, RESPONSE_DEFAULT}, NULL}
 
 /******************************************************************************
  * Function declarations
@@ -87,5 +98,7 @@ typedef struct
  * @returns Response structure.
  */
 RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAND cmd); 
+
+uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint32_t ui32_size);
 
 #endif //_COMMANDS_H_

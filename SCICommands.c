@@ -14,16 +14,18 @@
  *****************************************************************************/
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 #include "SCICommands.h"
 #include "Variables.h"
 #include "SCIconfig.h"
+
 
 /******************************************************************************
  * Function definitions
  *****************************************************************************/
 
 //=============================================================================
-RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAND cmd)
+RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
 {
     RESPONSE rsp = RESPONSE_DEFAULT;
 
@@ -34,6 +36,9 @@ RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAN
             {
                 float f_val = 0.0;
 
+                rsp.i16_num     = cmd.i16_num;
+                rsp.e_cmdType   = cmd.e_cmdType;
+
                 // If there is no readEEPROM callback or this is no EEPROM var, simply skip this step
                 if (p_varAccess->p_varStruct[cmd.i16_num - 1].vartype == eVARTYPE_EEPROM)
                     // If conditions are met, EEPROM read must be successful.
@@ -43,11 +48,11 @@ RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAN
                 if (!readValFromVarStruct(p_varAccess, cmd.i16_num, &f_val))
                     goto terminate;
                 
-                rsp.i16_num     = cmd.i16_num;
                 rsp.val.f_float = f_val;
-                rsp.e_cmdType   = cmd.e_cmdType;
                 rsp.b_valid     = true;
                 
+                // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
+                p_inst->responseControl.b_pending = false;
             }
             break;
 
@@ -55,9 +60,11 @@ RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAN
             {
                 float f_formerVal, newVal = 0.0;
                 //bool writeSuccessful = false;
-                bool readSuccessful = readValFromVarStruct(p_varAccess, cmd.i16_num, &f_formerVal);
+                
+                rsp.i16_num     = cmd.i16_num;
+                rsp.e_cmdType   = cmd.e_cmdType;
 
-                if (!readSuccessful)
+                if (!readValFromVarStruct(p_varAccess, cmd.i16_num, &f_formerVal))
                     goto terminate;
 
                 // Read back actual value and write new one (write will only happen if read was successful)
@@ -83,39 +90,74 @@ RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAN
                 readValFromVarStruct(p_varAccess, cmd.i16_num, &newVal);
 
                 // If everything happens to be allright, create the response
-                rsp.i16_num     = cmd.i16_num;
                 rsp.val.f_float = newVal;
-                rsp.e_cmdType   = cmd.e_cmdType;
                 rsp.b_valid     = true;
+
+                // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
+                p_inst->responseControl.b_pending = false;
             }
             break;
         
         case eCOMMAND_TYPE_COMMAND:
             {
-                bool cmdSuccess = false;
+                COMMAND_CB_STATUS cmdStatus = eCOMMAND_STATUS_UNKNOWN;
+                PROCESS_INFO info = PROCESS_INFO_DEFAULT;
+                // Determine if a new command has been sent or if the ongoing command is to be processed
+                bool b_newCmd = p_inst->responseControl.b_pending == false || (p_inst->responseControl.rsp.i16_num != cmd.i16_num);
 
-                // Check if a command structure has been passed
-                if (p_sciCommands->p_cmdCBStruct != NULL && cmd.i16_num > 0 && cmd.i16_num <= SIZE_OF_CMD_STRUCT)
+                if (b_newCmd)
                 {
-                    // TODO: Support for passing values to the command function
-                    #ifdef VALUE_MODE_HEX
-                    cmdSuccess = p_sciCommands->p_cmdCBStruct[cmd.i16_num - 1](&cmd.valArr[0].ui32_hex,cmd.ui8_valArrLen);
-                    #else
-                    cmdSuccess = p_sciCommands->p_cmdCBStruct[cmd.i16_num - 1](&cmd.valArr[0].f_float,cmd.ui8_valArrLen);
-                    #endif
+                    // Check if a command structure has been passed
+                    if (p_inst->p_cmdCBStruct != NULL && cmd.i16_num > 0 && cmd.i16_num <= SIZE_OF_CMD_STRUCT)
+                    {
+                        // TODO: Support for passing values to the command function
+                        #ifdef VALUE_MODE_HEX
+                        cmdStatus = p_inst->p_cmdCBStruct[cmd.i16_num - 1](&cmd.valArr[0].ui32_hex,cmd.ui8_valArrLen, &info);
+                        #else
+                        cmdStatus = p_inst->p_cmdCBStruct[cmd.i16_num - 1](&cmd.valArr[0].f_float,cmd.ui8_valArrLen, &info);
+                        #endif
+                    }
+
+                    // Response is getting sent independently of command success
+                    rsp.i16_num         = cmd.i16_num;
+                    rsp.e_cmdType       = cmd.e_cmdType;
+                    rsp.e_cmdStatus     = cmdStatus;
+                    rsp.info            = info;
+
+                    // Fill the response control struct
+                    p_inst->responseControl.b_pending               = true;
+                    p_inst->responseControl.b_firstPacketNotSent    = true;
+                    p_inst->responseControl.ui16_typeIdx            = 0;
+                    p_inst->responseControl.ui32_valIdx             = 0;
+                    p_inst->responseControl.rsp                     = rsp;
+
+                    if (cmdStatus != eCOMMAND_STATUS_ERROR && cmdStatus != eCOMMAND_STATUS_UNKNOWN)
+                        rsp.b_valid = true;
+                }
+                else
+                {
+                    rsp.i16_num         = p_inst->responseControl.rsp.i16_num;
+                    rsp.e_cmdType       = p_inst->responseControl.rsp.e_cmdType;
+                    rsp.e_cmdStatus     = p_inst->responseControl.rsp.e_cmdStatus;
+                    rsp.info            = p_inst->responseControl.rsp.info;
+                    p_inst->responseControl.b_firstPacketNotSent = false;
                 }
 
-                // Response is getting sent independently of command success
-                rsp.i16_num         = cmd.i16_num;
-                rsp.e_cmdType       = cmd.e_cmdType;
-                rsp.val.ui32_hex    = cmdSuccess ? 0 : 1;
-                rsp.b_valid         = true;
+                if (cmdStatus != eCOMMAND_STATUS_ERROR && cmdStatus != eCOMMAND_STATUS_UNKNOWN)
+                    rsp.b_valid = true;
             }
             break;
 
         default:
+            // If COMMAND_TYPE_NONE, we don't kill ongoing data transmissions
             break;
     }
 
     terminate: return rsp;
+}
+
+//=============================================================================
+uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint32_t ui32_maxSize)
+{
+
 }
