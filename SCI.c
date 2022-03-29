@@ -28,6 +28,7 @@ static SCI sci = SCI_DEFAULT;
 // Note: The idizes correspond to the values of the COMMAND_CB_STATUS enum values!
 static const uint8_t responseDesignator [5][3] = {"ACK", "DAB", "DAV", "ERR", "NAK"};
 static const uint8_t cmdIdArr[4] = {'#', '?', '!', ':'};
+const uint8_t ui8_byteLength[7] = {1,1,2,2,4,4,4};
 
 /******************************************************************************
  * Function definitions

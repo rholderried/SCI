@@ -35,7 +35,7 @@
 
 // Mode configuration
 #define SEND_MODE_BYTE_BY_BYTE
-#define VALUE_MODE_HEX
+//#define VALUE_MODE_HEX
 
 // EEPROM configuration
 #define EEPROM_ADDRESSTYPE  EEPROM_WORD_ADDRESSABLE
