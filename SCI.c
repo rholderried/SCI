@@ -26,8 +26,8 @@
  *****************************************************************************/
 static SCI sci = SCI_DEFAULT;
 // Note: The idizes correspond to the values of the COMMAND_CB_STATUS enum values!
-static const uint8_t responseDesignator [5][3] = {"ACK", "DAB", "DAV", "ERR", "NAK"};
-static const uint8_t cmdIdArr[4] = {'#', '?', '!', ':'};
+static const uint8_t responseDesignator [5][3] = {"ACK", "DAT", "UPS", "ERR", "NAK"};
+static const uint8_t cmdIdArr[6] = {'#', '?', '!', ':', '>', '<'};
 const uint8_t ui8_byteLength[7] = {1,1,2,2,4,4,4};
 
 /******************************************************************************
@@ -159,6 +159,16 @@ COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
             cmd.e_cmdType = eCOMMAND_TYPE_COMMAND;
             break;
         }
+        else if (pui8_buf[i] == UPSTREAM_IDENTIFIER)
+        {
+            cmd.e_cmdType = eCOMMAND_TYPE_UPSTREAM;
+            break;
+        }
+        else if (pui8_buf[i] == DOWNSTREAM_IDENTIFIER)
+        {
+            cmd.e_cmdType = eCOMMAND_TYPE_DOWNSTREAM;
+            break;
+        }
         
         // TODO: Error handling when no command identifier has been received
     }
@@ -269,6 +279,11 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
         switch (response.e_cmdType)
         {
             case eCOMMAND_TYPE_GETVAR:
+                // Fill the response designator
+                memcpy(pui8_buf, &responseDesignator[(uint8_t)eCOMMAND_STATUS_SUCCESS], 3);
+                pui8_buf+=3;
+                *pui8_buf++ = ';';
+                ui8_size += 4;
                 // Write the data value into the buffer
                 #ifdef VALUE_MODE_HEX
                 ui8_size += (uint8_t)hexToStr(pui8_buf, &response.val.ui32_hex, 8, true);
@@ -286,17 +301,13 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
 
             case eCOMMAND_TYPE_COMMAND:
                 // No response designator on every consecutive packet
-                if (sci.sciCommands.responseControl.b_firstPacketNotSent)
+                if (sci.sciCommands.responseControl.ui8_controlBits.firstPacketNotSent)
                 {
                     memcpy(pui8_buf, &responseDesignator[(uint8_t)response.e_cmdStatus], 3);
                     pui8_buf+=3;
                     ui8_size += 3;
-                }
-                
-                if (response.e_cmdStatus == eCOMMAND_STATUS_DATA_BYTES ||response.e_cmdStatus == eCOMMAND_STATUS_DATA_VALUES)
-                {
-                    // No datalength on every consecutive packet
-                    if (sci.sciCommands.responseControl.b_firstPacketNotSent)
+
+                    if (response.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_DATA ||response.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_UPSTREAM)
                     {
                         uint8_t ui8_asciiSize;
 
@@ -309,14 +320,24 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
                         #endif
                         pui8_buf += ui8_asciiSize;
                         ui8_size += ui8_asciiSize;
+                    }
+                }
+
+                // Fill the rest of the packet with data
+                if (sci.sciCommands.responseControl.ui8_controlBits.ongoing)
+                {
+                    if(sci.sciCommands.responseControl.ui8_controlBits.firstPacketNotSent)
+                    {
                         *pui8_buf++ = ';';
                         ui8_size++;
                     }
-                    
-                    // Fill the rest of the packet with data
-                    if (sci.sciCommands.responseControl.b_ongoing)
-                        ui8_size += fillBufferWithValues(&sci.sciCommands, pui8_buf, TX_PACKET_LENGTH - ui8_size);
+                    ui8_size += fillBufferWithValues(&sci.sciCommands, pui8_buf, TX_PACKET_LENGTH - ui8_size);
                 }
+
+                break;
+            
+            case eCOMMAND_TYPE_UPSTREAM:
+                ui8_size += fillBufferWithValues(&sci.sciCommands, pui8_buf, TX_PACKET_LENGTH - ui8_size);
                 break;
 
             default:

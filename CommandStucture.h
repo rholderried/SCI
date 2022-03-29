@@ -25,11 +25,11 @@
  *****************************************************************************/
 typedef enum
 {
-    eCOMMAND_STATUS_SUCCESS         = 0,
-    eCOMMAND_STATUS_DATA_BYTES      = 1,
-    eCOMMAND_STATUS_DATA_VALUES     = 2,
-    eCOMMAND_STATUS_ERROR           = 3,
-    eCOMMAND_STATUS_UNKNOWN         = 4
+    eCOMMAND_STATUS_SUCCESS             = 0,
+    eCOMMAND_STATUS_SUCCESS_DATA        = 1,
+    eCOMMAND_STATUS_SUCCESS_UPSTREAM    = 2,
+    eCOMMAND_STATUS_ERROR               = 3,
+    eCOMMAND_STATUS_UNKNOWN             = 4
 }COMMAND_CB_STATUS;
 
 typedef struct

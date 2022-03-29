@@ -57,7 +57,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                 rsp.b_valid     = true;
                 
                 // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
-                p_inst->responseControl.b_ongoing = false;
+                p_inst->responseControl.ui8_controlBits.ongoing = false;
             }
             break;
 
@@ -99,7 +99,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                 rsp.b_valid     = true;
 
                 // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
-                p_inst->responseControl.b_ongoing = false;
+                p_inst->responseControl.ui8_controlBits.ongoing = false;
             }
             break;
         
@@ -108,7 +108,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                 COMMAND_CB_STATUS cmdStatus = eCOMMAND_STATUS_UNKNOWN;
                 PROCESS_INFO info = PROCESS_INFO_DEFAULT;
                 // Determine if a new command has been sent or if the ongoing command is to be processed
-                bool b_newCmd = p_inst->responseControl.b_ongoing == false || (p_inst->responseControl.rsp.i16_num != cmd.i16_num);
+                bool b_newCmd = p_inst->responseControl.ui8_controlBits.ongoing == false || (p_inst->responseControl.rsp.i16_num != cmd.i16_num);
 
                 if (b_newCmd)
                 {
@@ -130,40 +130,49 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                     rsp.info            = info;
 
                     // Fill the response control struct
-                    p_inst->responseControl.b_firstPacketNotSent    = true;
-                    p_inst->responseControl.ui16_typeIdx            = 0;
-                    p_inst->responseControl.ui32_byteIdx             = 0;
+                    p_inst->responseControl.ui8_controlBits.firstPacketNotSent  = true;
+                    p_inst->responseControl.ui16_typeIdx                        = 0;
+                    p_inst->responseControl.ui32_byteIdx                        = 0;
                     
                     if (cmdStatus != eCOMMAND_STATUS_ERROR && cmdStatus != eCOMMAND_STATUS_UNKNOWN)
                     {
                         rsp.b_valid = true;
 
-                        if (rsp.info.ui32_datLen > 0 && 
-                            rsp.e_cmdStatus == eCOMMAND_STATUS_DATA_BYTES ||
-                            rsp.e_cmdStatus == eCOMMAND_STATUS_DATA_VALUES)
-                        {
-                            p_inst->responseControl.b_ongoing = true;
-                        }
-                        else
-                            p_inst->responseControl.b_ongoing = false;
+                        p_inst->responseControl.ui8_controlBits.ongoing = 
+                            ((rsp.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_DATA) && (rsp.info.ui32_datLen > 0));
+                        p_inst->responseControl.ui8_controlBits.upstream = 
+                            ((rsp.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_UPSTREAM) && (rsp.info.ui32_datLen > 0));
                     }
                     // Save the response for later
-                    p_inst->responseControl.rsp                     = rsp;
+                    p_inst->responseControl.rsp = rsp;
                     
                 }
                 else
                 {
+                    rsp.b_valid         = true;
                     rsp.i16_num         = p_inst->responseControl.rsp.i16_num;
                     rsp.e_cmdType       = p_inst->responseControl.rsp.e_cmdType;
                     rsp.e_cmdStatus     = p_inst->responseControl.rsp.e_cmdStatus;
                     rsp.info            = p_inst->responseControl.rsp.info;
-                    p_inst->responseControl.b_firstPacketNotSent = false;
+                    p_inst->responseControl.ui8_controlBits.firstPacketNotSent = false;
                 }
-
-                if (rsp.e_cmdStatus != eCOMMAND_STATUS_ERROR && rsp.e_cmdStatus != eCOMMAND_STATUS_UNKNOWN)
-                    rsp.b_valid = true;
             }
             break;
+        
+        case eCOMMAND_TYPE_UPSTREAM:
+
+            // Number must match with the previously sent command
+            if (p_inst->responseControl.rsp.i16_num == cmd.i16_num && p_inst->responseControl.ui8_controlBits.upstream == true)
+            {
+                rsp.b_valid         = true;
+                rsp.i16_num         = p_inst->responseControl.rsp.i16_num;
+                rsp.e_cmdType       = cmd.e_cmdType;
+                rsp.info            = p_inst->responseControl.rsp.info;
+                // Change the command type
+                p_inst->responseControl.rsp.e_cmdType = rsp.e_cmdType;
+            }
+            // TODO: Error handling
+
 
         default:
             // If COMMAND_TYPE_NONE, we don't kill ongoing data transmissions
@@ -182,7 +191,7 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
     if (p_inst->responseControl.rsp.info.pui8_buf == NULL)
         return 0;
 
-    if (p_inst->responseControl.rsp.e_cmdStatus == eCOMMAND_STATUS_DATA_BYTES)
+    if (p_inst->responseControl.rsp.e_cmdType == eCOMMAND_TYPE_UPSTREAM)
     {
         while (ui8_maxSize > (ui8_currentDataSize + 1) && p_inst->responseControl.rsp.info.ui32_datLen > 0)
         {
@@ -192,7 +201,7 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
             p_buf += 2;
         }
     }
-    else if (p_inst->responseControl.rsp.e_cmdStatus == eCOMMAND_STATUS_DATA_VALUES)
+    else if (p_inst->responseControl.rsp.e_cmdType == eCOMMAND_TYPE_COMMAND)
     {
         bool    b_commaSet = false;
         uint8_t ui8_asciiSize;
@@ -274,7 +283,9 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
 
     // Reset the ongoing flag when no data is left to transmit
     if (p_inst->responseControl.rsp.info.ui32_datLen == 0)
-        p_inst->responseControl.b_ongoing = false;
-
+    {
+        p_inst->responseControl.ui8_controlBits.ongoing = false;
+        p_inst->responseControl.ui8_controlBits.upstream = false;
+    }
     return ui8_currentDataSize;
 }

@@ -39,7 +39,8 @@ void dummyTxCb(uint8_t * pui8_buf, uint8_t ui8_size)
 void TestSCI_generateReads(void)
 {
     // uint8_t ui8_msg[] = {2,'3','!','D','4',3};
-    uint8_t ui8_msg[] = {2,'1',':','D','4',3};
+    uint8_t ui8_msg1[] = {2,'1',':','D','4',3};
+    // uint8_t ui8_msg1[] = {2,'1','>',3};
     //uint8_t ui8_msg[] = {2,'7','?','D','4',3};
     // uint8_t ui8_msg[] = {2,'7','D','4',3};
 
@@ -51,9 +52,9 @@ void TestSCI_generateReads(void)
     }
     
     // Dummy receive
-    for(uint8_t i = 0; i < sizeof(ui8_msg); i++)
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
     {
-        SCI_receiveData(ui8_msg[i]);
+        SCI_receiveData(ui8_msg1[i]);
     }
 
     for(uint8_t i = 0; i < ui8_loopCount; i++)
@@ -62,9 +63,111 @@ void TestSCI_generateReads(void)
     }
 
     // Dummy receive
-    for(uint8_t i = 0; i < sizeof(ui8_msg); i++)
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
     {
-        SCI_receiveData(ui8_msg[i]);
+        SCI_receiveData(ui8_msg1[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
+    {
+        SCI_receiveData(ui8_msg1[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
+    {
+        SCI_receiveData(ui8_msg1[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
+    {
+        SCI_receiveData(ui8_msg1[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
+    {
+        SCI_receiveData(ui8_msg1[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
+    {
+        SCI_receiveData(ui8_msg1[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
+    {
+        SCI_receiveData(ui8_msg1[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
+    {
+        SCI_receiveData(ui8_msg1[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
+    {
+        SCI_receiveData(ui8_msg1[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
+    {
+        SCI_receiveData(ui8_msg1[i]);
+    }
+
+    for(uint8_t i = 0; i < ui8_loopCount; i++)
+    {
+        SCI_statemachine();
+    }
+    // Dummy receive
+    for(uint8_t i = 0; i < sizeof(ui8_msg1); i++)
+    {
+        SCI_receiveData(ui8_msg1[i]);
     }
 
     for(uint8_t i = 0; i < ui8_loopCount; i++)

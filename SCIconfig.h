@@ -26,8 +26,8 @@
 /******************************************************************************
  * Defines
  *****************************************************************************/
-#define RX_PACKET_LENGTH    30
-#define TX_PACKET_LENGTH    30
+#define RX_PACKET_LENGTH    10
+#define TX_PACKET_LENGTH    10
 
 #define SIZE_OF_VAR_STRUCT  5
 #define SIZE_OF_CMD_STRUCT  1
@@ -35,7 +35,7 @@
 
 // Mode configuration
 #define SEND_MODE_BYTE_BY_BYTE
-//#define VALUE_MODE_HEX
+#define VALUE_MODE_HEX
 
 // EEPROM configuration
 #define EEPROM_ADDRESSTYPE  EEPROM_WORD_ADDRESSABLE

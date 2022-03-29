@@ -31,7 +31,7 @@ COMMAND_CB_STATUS testCmd (uint32_t* pui32_valArray, uint8_t ui8_valArrayLen, PR
     p_info->ui32_datLen = 10;
     p_info->eDataFormat = e_testDtypes;
     p_info->ui16_dataFormatLen= 1;
-    return eCOMMAND_STATUS_DATA_VALUES;
+    return eCOMMAND_STATUS_SUCCESS_DATA;
 }
 #else
 COMMAND_CB_STATUS testCmd (float* pf_valArray, uint8_t ui8_valArrayLen, PROCESS_INFO *p_info)
@@ -41,10 +41,10 @@ COMMAND_CB_STATUS testCmd (float* pf_valArray, uint8_t ui8_valArrayLen, PROCESS_
         f_buf[i] = (float)i + 0.5;
 
     p_info->pui8_buf = ui8_testBuffer;
-    p_info->ui32_datLen = 5;
+    p_info->ui32_datLen = 20;
     p_info->eDataFormat = e_testDtypes;
     p_info->ui16_dataFormatLen= 1;
-    return eCOMMAND_STATUS_DATA_BYTES;
+    return eCOMMAND_STATUS_SUCCESS_UPSTREAM;
 }
 #endif
 

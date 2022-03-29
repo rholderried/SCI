@@ -31,10 +31,12 @@
 /** \brief Command type enumeration.*/
 typedef enum 
 {
-    eCOMMAND_TYPE_NONE      =   0,
-    eCOMMAND_TYPE_GETVAR    =   1,
-    eCOMMAND_TYPE_SETVAR    =   2,
-    eCOMMAND_TYPE_COMMAND   =   3
+    eCOMMAND_TYPE_NONE          = 0,
+    eCOMMAND_TYPE_GETVAR        = 1,
+    eCOMMAND_TYPE_SETVAR        = 2,
+    eCOMMAND_TYPE_COMMAND       = 3,
+    eCOMMAND_TYPE_UPSTREAM      = 4,
+    eCOMMAND_TYPE_DOWNSTREAM    = 5
 }COMMAND_TYPE;
 
 
@@ -77,8 +79,19 @@ typedef struct
 {
     struct
     {
-        bool        b_ongoing;
-        bool        b_firstPacketNotSent;
+        union
+        {
+            struct
+            {
+                uint8_t firstPacketNotSent  : 1;
+                uint8_t ongoing             : 1;
+                uint8_t upstream            : 1;
+                uint8_t reserved            : 5;
+            }ui8_controlBits;
+            uint8_t ui8_controlByte;
+        };
+        // bool        b_ongoing;
+        // bool        b_firstPacketNotSent;
         uint16_t    ui16_typeIdx;
         uint32_t    ui32_byteIdx;
         RESPONSE    rsp;
@@ -87,7 +100,7 @@ typedef struct
     COMMAND_CB *p_cmdCBStruct;      /*!< Command callback structure.*/
 }SCI_COMMANDS;
 
-#define SCI_COMMANDS_DEFAULT    {{false, true, 0, 0, RESPONSE_DEFAULT}, NULL}
+#define SCI_COMMANDS_DEFAULT    {{{.ui8_controlByte = 0}, 0, 0, RESPONSE_DEFAULT}, NULL}
 
 /******************************************************************************
  * Function declarations

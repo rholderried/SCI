@@ -32,9 +32,11 @@
  * Defines
  *****************************************************************************/
 
-#define GETVAR_IDENTIFIER   '?'
-#define SETVAR_IDENTIFIER   '!'
-#define COMMAND_IDENTIFIER  ':'
+#define GETVAR_IDENTIFIER       '?'
+#define SETVAR_IDENTIFIER       '!'
+#define COMMAND_IDENTIFIER      ':'
+#define UPSTREAM_IDENTIFIER     '>'
+#define DOWNSTREAM_IDENTIFIER   '<'
 
 /******************************************************************************
  * Type definitions
