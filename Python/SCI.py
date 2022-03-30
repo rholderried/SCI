@@ -37,24 +37,24 @@ class Dataformat(Enum):
 
 class Response:
     def __init__(self):
-        self.number = None
-        self.responseDesignator = None
-        self.dataLength = None
-        self.dataArray = None
-        self.upstreamData = None
+        self.number             : Optional[int]                     = None
+        self.responseDesignator : Optional[str]                     = None
+        self.dataLength         : Optional[int]                     = None
+        self.dataArray          : Optional[List[Union[float, int]]] = None
+        self.upstreamData       : Optional[bytearray]               = None
 
 class Command:
     def __init__(self):
-        self.number     = None
-        self.commandID  = None
-        self.dataArray  = None
-        self.dataFormat = None
+        self.number     : Optional[int]                     = None
+        self.commandID  : Optional[CommandID]               = None
+        self.dataArray  : Optional[Iterable[float, int]]    = None
+        self.dataFormat : Optional[Iterable[Dataformat]]    = None
 
 class SCI:
-    STX_INT = 2
-    ETX_INT = 3
-    STX = STX_INT.to_bytes(1,'big')
-    ETX = ETX_INT.to_bytes(1,'big')
+    STX = 2
+    ETX = 3
+    # STX = STX_INT.to_bytes(1,'big')
+    # ETX = ETX_INT.to_bytes(1,'big')
 
     # Command Identifier
     #COMMAND_ID = {'REJECTED' : '#', 'GETVAR' : '?', 'SETVAR' : '!', 'COMMAND' : ':', 'UPSTREAM' : '>', 'DOWNSTREAM' : '<'}
@@ -97,40 +97,43 @@ class SCI:
 
         msgStr = msg.decode()
 
+        splitted = msgStr.split(cmdID.value)
+        
         try:
-            splitted = msgStr.split(cmdID.value())
+            if self.numberFormat.name == 'HEX':
+                rsp.number = int(splitted[0], 16)
+            else: # number format is set to float
+                rsp.number = int(float(splitted[0]) + 0.5)
         except Exception as e:
             raise ValueError(f'MESSAGE DECODE: Wrong message format - {e}')
 
-        if self.numberFormat.name() == 'HEX':
-            rsp.number = int(splitted[0], 16)
-        else: # number format is set to float
-            rsp.number = int(float(splitted[0]) + 0.5)
-
         # Data section
-        msgDat = splitted[1]
+        msgDat = splitted[1].split(';')
 
         # Special case: Message is an upstream, so there is no response designator
         if (cmdID.name) != 'UPSTREAM':
-            rsp.responseDesignator = msgDat.split(';')[0]
+            rsp.responseDesignator = msgDat[0]
         else:
             # Encode data into bytearray
-            rsp.upstreamData = bytearray.fromhex(msgDat)
+            rsp.upstreamData = bytearray.fromhex(msgDat[0])
+            rsp.dataLength = 0
 
         # Data transfer
         if len(msgDat) > 2:
             datStrArr = msgDat[2].split(',')
-            if self.numberFormat.name() == 'HEX':
+            if self.numberFormat.name == 'HEX':
                 rsp.dataArray = [int(data, 16) for data in datStrArr]
             else: # number format is set to float
                 rsp.dataArray = [float(data) for data in datStrArr]
         
         # Data Transfer and Upstream
         if len(msgDat) > 1:
-            if self.numberFormat.name() == 'HEX':
+            if self.numberFormat.name == 'HEX':
                 rsp.dataLength = int(msgDat[1], 16)
             else: # number format is set to float
                 rsp.dataLength = int(float(msgDat[1]) + 0.5)
+        else:
+            rsp.dataLength = 0
 
         return rsp
     
@@ -148,28 +151,28 @@ class SCI:
         """
         
         num = None
-        dataStr = None
+        packet = None
 
         if self.numberFormat.name == 'HEX':
             byteStringArray = None
 
             num = struct.pack(f'>L', command.number).hex().upper().lstrip('0')
 
-            if not isinstance(command.commandID, CommandID):
-                raise ValueError('command.commandID must be an instance of the CommandID class.')
+            # if not isinstance(command.commandID, CommandID):
+            #     raise ValueError('command.commandID must be an instance of the CommandID class.')
 
             if command.commandID is not None and command.dataFormat is not None:
 
-                if not hasattr(command.dataArray, '__iter__') or not hasattr(command.dataFormat, '__iter__'):
-                    raise ValueError('command.dataArray and command.dataFormat must be iterables.')
+                # if not hasattr(command.dataArray, '__iter__') or not hasattr(command.dataFormat, '__iter__'):
+                #     raise ValueError('command.dataArray and command.dataFormat must be iterables.')
                 
                 formatArray = f'{"".join(form.value for form in command.dataFormat)}'
                 byteStringArray = [struct.pack(f'>{formatItem}', dataItem).hex().upper().lstrip('0') for formatItem, dataItem in zip(formatArray, command.dataArray)]
 
             if byteStringArray is not None:
-                dataStr = f'{num}{command.commandID.value}{",".join(item for item in byteStringArray)}'
+                packet = f'{num}{command.commandID.value}{",".join(item for item in byteStringArray)}'
             else:
-                dataStr = f'{num}{command.commandID.value}'
+                packet = f'{num}{command.commandID.value}'
             
         else: # number format is set to float
             floatStringArray = None
@@ -178,22 +181,18 @@ class SCI:
 
             if command.commandID is not None and command.dataFormat is not None:
 
-                if not hasattr(command.dataArray, '__iter__'):
-                    raise ValueError('command.dataArray must be iterable.')
+                # if not hasattr(command.dataArray, '__iter__'):
+                #     raise ValueError('command.dataArray must be iterable.')
 
                 floatStringArray = [f'{str(float(item)).rstrip("0")}' if isinstance(item, float) else f'{str(int(item))}' for item in command.dataArray]
 
             if floatStringArray is not None:
-                dataStr = f'{num}{command.commandID.value}{",".join(item for item in floatStringArray)}'
+                packet = f'{num}{command.commandID.value}{",".join(item for item in floatStringArray)}'
             else:
-                dataStr = f'{num}{command.commandID.value}'
+                packet = f'{num}{command.commandID.value}'
 
 
-        return dataStr.encode("ASCII")
-    
-        # self.device.write(self.STX)
-        # self.device.write(message)
-        # self.device.write(self.ETX)
+        return bytearray(packet,'ASCII')
 
     #==============================================================================
     def _send(self, packet : bytearray):
@@ -201,31 +200,52 @@ class SCI:
         if len(packet) > self.maxPacketSize:
             raise Exception(f'Size of packet too big: Packet size: {len(packet)}; Max size: {len(self.maxPacketSize)}.')
         
-        self.device.write(self.STX)
+        packet.insert(0, self.STX)
+        packet.append(self.ETX)
         self.device.write(packet)
-        self.device.write(self.ETX)
     
     #==============================================================================
-    def command(self, number, paramList : List):                                                  
-        params = [number, self.COLON]
+    def command(self, number : int, paramList : Iterable[Union[float, int, None]] = None, typeList : Iterable[Union[Dataformat, None]] = None) -> List[Union[float, int]]:
+        """
+        Send a command to the SCI device
+        """
 
-        for parameter in paramList:
-            params.append(parameter)
+        # Construct command
+        cmd = Command()
+        cmd.number      = number
+        cmd.commandID   = CommandID.SETVAR
+        cmd.dataArray   = paramList
+        cmd.dataFormat  = typeList
+
+        firstCycleHandled = False
+        expectedDatalen = 1
+        data = []
+        
 
         # Query is allowed just once at a time!
         with self.ressourceLock:
-            self.device.flush()
-            self._sendmessage(params)                                                     
-            response = self.device.read_until(b'\x03')
+            
+            while (len(data) < expectedDatalen):
+                packet = self._encode(cmd)
+                self.device.flush()
+                self._send(packet)
+                response = self.device.read_until(b'\x03')
+                rsp = self._decode(response, cmd.commandID)
 
-        _, resp_val = self._decode_message(response, self.COLON)
-
-        result = int(float(resp_val) + 0.5)
-
-        if result == 0:
-            return True 
-        else:
-            return False
+                # This command does not need further processing
+                if rsp.responseDesignator == 'ACK' or rsp.responseDesignator == 'UPS':
+                    break
+                elif rsp.responseDesignator == 'ERR':
+                    raise Exception(f'Command error: {rsp.dataArray[0]}')
+                elif rsp.responseDesignator == 'NAK':
+                    raise Exception('Command unknown')
+                elif rsp.responseDesignator == 'DAT':
+                    expectedDatalen = rsp.dataLength
+                
+                # Here we also land if the response designator is None
+                data.extend(rsp.dataArray.copy())
+        
+        return data
 
     #==============================================================================
     def setvalue(self, number, value):
