@@ -293,7 +293,7 @@ class SCI:
                 ongoing = True
                 sendOnce = False
                 # Sleep time necessary for reliable data transmission
-                time.sleep(0.001)
+                time.sleep(0.01)
         
             # Type conversion
             if len(data) > 0:

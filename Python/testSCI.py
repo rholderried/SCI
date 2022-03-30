@@ -6,7 +6,7 @@ par2 = Parameter(2, Datatype.DTYPE_F32)
 
 fcn1 = Function(1, returnTypeList = [Datatype.DTYPE_F32]*20)
 
-inst = SCI('COM3', 128, baud = 2000000, numberFormat=NumberFormat.FLOAT)
+inst = SCI('COM3', 128, baud = 2000000, numberFormat=NumberFormat.HEX)
 
 start = time()
 #value = inst.getvalue(par1)
