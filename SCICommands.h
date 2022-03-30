@@ -72,35 +72,34 @@ typedef struct
 
 #define RESPONSE_DEFAULT         {false, 0, {.ui32_hex = 0}, eCOMMAND_TYPE_NONE, eCOMMAND_STATUS_UNKNOWN, PROCESS_INFO_DEFAULT}
 
-/******************************************************************************
- * Type definitions
- *****************************************************************************/
 typedef struct
 {
-    struct
+    union
     {
-        union
+        struct
         {
-            struct
-            {
-                uint8_t firstPacketNotSent  : 1;
-                uint8_t ongoing             : 1;
-                uint8_t upstream            : 1;
-                uint8_t reserved            : 5;
-            }ui8_controlBits;
-            uint8_t ui8_controlByte;
-        };
-        // bool        b_ongoing;
-        // bool        b_firstPacketNotSent;
-        uint16_t    ui16_typeIdx;
-        uint32_t    ui32_byteIdx;
-        RESPONSE    rsp;
-    }responseControl;
+            uint8_t firstPacketNotSent  : 1;
+            uint8_t ongoing             : 1;
+            uint8_t upstream            : 1;
+            uint8_t reserved            : 5;
+        }ui8_controlBits;
+        uint8_t ui8_controlByte;
+    };
+    uint16_t    ui16_typeIdx;
+    uint32_t    ui32_byteIdx;
+    RESPONSE    rsp;
+}RESPONSECONTROL;
+
+#define RESPONSECONTROL_DEFAULT {{.ui8_controlByte = 0}, 0, 0, RESPONSE_DEFAULT}
+
+typedef struct
+{
+    RESPONSECONTROL responseControl;
 
     COMMAND_CB *p_cmdCBStruct;      /*!< Command callback structure.*/
 }SCI_COMMANDS;
 
-#define SCI_COMMANDS_DEFAULT    {{{.ui8_controlByte = 0}, 0, 0, RESPONSE_DEFAULT}, NULL}
+#define SCI_COMMANDS_DEFAULT    {RESPONSECONTROL_DEFAULT, NULL}
 
 /******************************************************************************
  * Function declarations
@@ -113,5 +112,7 @@ typedef struct
 RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAND cmd); 
 
 uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_maxSize);
+
+void clearResponseControl(SCI_COMMANDS *p_inst);
 
 #endif //_COMMANDS_H_

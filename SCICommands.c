@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdlib.h>
 #include "SCICommands.h"
 #include "Variables.h"
 #include "Helpers.h"
@@ -57,7 +58,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                 rsp.b_valid     = true;
                 
                 // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
-                p_inst->responseControl.ui8_controlBits.ongoing = false;
+                clearResponseControl(p_inst);
             }
             break;
 
@@ -99,7 +100,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                 rsp.b_valid     = true;
 
                 // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
-                p_inst->responseControl.ui8_controlBits.ongoing = false;
+                clearResponseControl(p_inst);
             }
             break;
         
@@ -208,10 +209,13 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
         uint8_t ui8_datLen;
         uint8_t ui8_datBuf[20];
         uint32_t ui32_currentHexVal;
+
+        #ifndef VALUE_MODE_HEX
         float   f_passVal;
+        #endif
 
         // Check if there is a valid data format table pointer passed
-        if (p_inst->responseControl.rsp.info.eDataFormat == NULL)
+        if (p_inst->responseControl.rsp.info.pe_dataTypeBuf == NULL)
             return 0;
 
         while (true)
@@ -228,10 +232,10 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
             }
 
             // Handle data format buffer overflow
-            if (p_inst->responseControl.ui16_typeIdx >= p_inst->responseControl.rsp.info.ui16_dataFormatLen)
+            if (p_inst->responseControl.ui16_typeIdx >= p_inst->responseControl.rsp.info.ui16_dataTypeBufLen)
                 p_inst->responseControl.ui16_typeIdx = 0;
 
-            ui8_datLen = ui8_byteLength[p_inst->responseControl.rsp.info.eDataFormat[p_inst->responseControl.ui16_typeIdx]];
+            ui8_datLen = ui8_byteLength[p_inst->responseControl.rsp.info.pe_dataTypeBuf[p_inst->responseControl.ui16_typeIdx]];
             ui32_currentHexVal = *(uint32_t*)&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx];
 
             #ifdef VALUE_MODE_HEX
@@ -283,9 +287,22 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
 
     // Reset the ongoing flag when no data is left to transmit
     if (p_inst->responseControl.rsp.info.ui32_datLen == 0)
-    {
-        p_inst->responseControl.ui8_controlBits.ongoing = false;
-        p_inst->responseControl.ui8_controlBits.upstream = false;
-    }
+        clearResponseControl(p_inst);
+
     return ui8_currentDataSize;
+}
+
+//=============================================================================
+void clearResponseControl(SCI_COMMANDS *p_inst)
+{
+    RESPONSECONTROL cleanObj = RESPONSECONTROL_DEFAULT;
+
+    // Free previously allocated memory
+    if (p_inst->responseControl.rsp.info.ui8_infoFlagBits.dataBufDynamic == true)
+        free(p_inst->responseControl.rsp.info.pui8_buf);
+    if (p_inst->responseControl.rsp.info.ui8_infoFlagBits.datatypeBufDynamic == true)
+        free(p_inst->responseControl.rsp.info.pe_dataTypeBuf);
+
+    // Clean the structure
+    memcpy(&p_inst->responseControl, &cleanObj, sizeof(RESPONSECONTROL));
 }

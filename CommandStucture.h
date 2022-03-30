@@ -34,14 +34,25 @@ typedef enum
 
 typedef struct
 {
+    union
+    {
+        struct
+        {
+            uint8_t dataBufDynamic      : 1;
+            uint8_t datatypeBufDynamic  : 1;
+            uint8_t reserved            : 6;
+        }ui8_infoFlagBits;
+
+        uint8_t ui8_infoFlagByte;
+    };
     uint8_t  *pui8_buf;
     uint32_t ui32_datLen;
-    DTYPE    *eDataFormat;
-    uint16_t ui16_dataFormatLen;
+    DTYPE    *pe_dataTypeBuf;
+    uint16_t ui16_dataTypeBufLen;
     uint16_t ui16_error;
 }PROCESS_INFO;
 
-#define PROCESS_INFO_DEFAULT {NULL, 0, NULL, 0, 0}
+#define PROCESS_INFO_DEFAULT {{.ui8_infoFlagByte = 0}, NULL, 0, NULL, 0, 0}
 
 /** \brief Command structure member.
  * 
