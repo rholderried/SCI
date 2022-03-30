@@ -60,23 +60,22 @@ class Parameter:
 
 class Function:
 
-    def __init__(self, number : int,  argTypeList : Iterable[Union[Datatype, None]] = None, returnTypeList : Iterable[Union[Datatype, None]] = None, description : Optional[str] = None):
-        self.description    : Optional[str]                     = description
-        self.number         : int                               = number
-        self.argTypeList    : Optional[Iterable[Datatype]]      = argTypeList
-        self.returnTypeList : Optional[Iterable[Datatype]]      = returnTypeList
+    def __init__(self, number : int,  argTypeList : Iterable[Union[Datatype, None]] = None, returnTypeList : Iterable[Union[Datatype, None]] = None, description : Optional[str] = None, requestsUpstream : bool = False):
+
+        if requestsUpstream and returnTypeList is not None:
+            raise ValueError('FUNCTION - Specifying return data types of a function requesting an upstream is not possible.')
+
+        self.description        : Optional[str]                 = description
+        self.number             : int                           = number
+        self.argTypeList        : Optional[Iterable[Datatype]]  = argTypeList
+        self.returnTypeList     : Optional[Iterable[Datatype]]  = returnTypeList
+        self.requestsUpstream   : bool                          = requestsUpstream
 
 class SCI:
     STX = 2
     ETX = 3
-    # STX = STX_INT.to_bytes(1,'big')
-    # ETX = ETX_INT.to_bytes(1,'big')
 
-    # Command Identifier
-    #COMMAND_ID = {'REJECTED' : '#', 'GETVAR' : '?', 'SETVAR' : '!', 'COMMAND' : ':', 'UPSTREAM' : '>', 'DOWNSTREAM' : '<'}
-    # EXCLAM      = "!"
-    # QUESTION    = "?"
-    # COLON       = ":"
+
     #==============================================================================
     def __init__(self, port, maxPacketSize, baud : int = 115200, timeout : float = 0.4, numberFormat : NumberFormat = NumberFormat.HEX):
 
@@ -160,7 +159,7 @@ class SCI:
                 else: # number format is set to float
                     rsp.dataArray = [float(data) for data in datStrArr]
 
-        elif cmdID.name == 'GETVAR':
+        elif cmdID.name == 'GETVAR' or cmdID == 'SETVAR':
             # Data Transfer and Upstream
             if len(msgDat) > 1:
                 if self.numberFormat.name == 'HEX':
@@ -229,6 +228,9 @@ class SCI:
 
     #==============================================================================
     def _send(self, packet : bytearray):
+        """
+        Sends data to the packed as bytearray to the SCI device.
+        """
         
         if len(packet) > self.maxPacketSize:
             raise Exception(f'Size of packet too big: Packet size: {len(packet)}; Max size: {len(self.maxPacketSize)}.')
@@ -245,9 +247,18 @@ class SCI:
 
     
     #==============================================================================
-    def command(self, function : Function, paramList : Iterable[Union[float, int, None]] = None) -> List[Union[float, int]]:
+    def command(self, function : Function, paramList : Optional[Iterable[Union[float, int]]] = None) -> Union[List[Union[float, int]], int]:
         """
-        Send a command to the SCI device
+        Send a command to the SCI device.
+
+        Parameters:
+        -----------
+        - function  : Function object of the external callback to execute
+        - paramList : List of parameters to be passed to the external callback
+
+        Returns:
+        --------
+        - List of return values from the external function or datalength of the upcoming upstream.
         """
 
         if paramList is not None:
@@ -279,8 +290,10 @@ class SCI:
                 rsp = self._decode(bytearray(response), cmd.commandID, ongoing)
 
                 # This command does not need further processing
-                if rsp.responseDesignator == 'ACK' or rsp.responseDesignator == 'UPS':
+                if rsp.responseDesignator == 'ACK':
                     break
+                elif rsp.responseDesignator == 'UPS':
+                    return rsp.dataLength
                 elif rsp.responseDesignator == 'ERR':
                     raise Exception(f'COMMAND - Error: {rsp.dataArray[0]}')
                 elif rsp.responseDesignator == 'NAK':
@@ -308,6 +321,11 @@ class SCI:
     def setvalue(self, parameter : Parameter, value : Union[float, int]):
         """
         Sets a variable of the variable struct
+
+        Parameters:
+        -----------
+        - parameter : Parameter object of the variable to set
+        - value     : Value to set
         """
 
         # Construct command
@@ -339,7 +357,15 @@ class SCI:
 
     def getvalue(self, parameter : Parameter) -> Union[float,int]:
         """
-        gets a variable value of the variable struct
+        Requests a variable value from the variable struct.
+
+        Parameters:
+        -----------
+        - parameter: Parameter object of the variable to request
+
+        Returns:
+        --------
+        - Variable value of the requested struct variable
         """
         
         # Construct command
@@ -366,7 +392,56 @@ class SCI:
             raise Exception(f'GETVALUE - Error: {rsp.dataArray[0]}')
         elif rsp.responseDesignator == 'NAK':
             raise Exception('GETVALUE - Variable unknown')
-        
+
+
+    def requestUpstream(self, function : Function, paramList : Optional[Iterable[Union[float, int]]] = None) -> bytearray:
+        """
+        Upstream request function. 
+        TODO: To be tested!!!
+
+        Parameters:
+        -----------
+        - function  : Function object of the external callback to request.
+        - paramList : Parameter to be passed to the external function
+
+        Returns:
+        --------
+        - bytearray holding the upstream data    
+        """
+
+        # Request upstream
+        upstreamSize = self.command(function, paramList=paramList)
+
+        cmd = Command()
+        cmd.number      = function.number
+        cmd.commandID   = CommandID.UPSTREAM
+
+        data = bytearray([])
+
+        with self.ressourceLock:
+
+            self.device.flush()
+
+            while (len(data) < len(upstreamSize)):
+
+                packet = self._encode(cmd)
+
+                self._send(packet)
+
+                # TODO: This has to be replaced by a function reading number of bytes if the upstream has been switched to binary format
+                response = self.device.read_until(b'\x03')
+
+                if len(response) == 0:
+                    raise Exception('UPSTREAM REQUEST - Timeout occured')
+
+                rsp = self._decode(bytearray(response), cmd.commandID)
+                
+                # Here we also land if the response designator is None
+                data.extend(rsp.upstreamData.copy())
+                # Sleep time necessary for reliable data transmission
+                time.sleep(0.01)
+
+        return data
     
 
 
