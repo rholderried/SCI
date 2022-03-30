@@ -295,12 +295,12 @@ class SCI:
                 # Sleep time necessary for reliable data transmission
                 time.sleep(0.01)
         
-            # Type conversion
-            if len(data) > 0:
-                if self.numberFormat.name == 'HEX':
-                    data = [self._reinterpretDecodedIntToDtype(dat, type) for dat, type in zip(data, function.returnTypeList)]
-                else:
-                    data = [dat if function.returnTypeList[i].name == 'DTYPE_F32' else int(dat) for dat, i in zip(data, range(len(function.returnTypeList)))]
+        # Type conversion
+        if len(data) > 0:
+            if self.numberFormat.name == 'HEX':
+                data = [self._reinterpretDecodedIntToDtype(dat, type) for dat, type in zip(data, function.returnTypeList)]
+            else:
+                data = [dat if function.returnTypeList[i].name == 'DTYPE_F32' else int(dat) for dat, i in zip(data, range(len(function.returnTypeList)))]
 
         return data
 
@@ -326,15 +326,15 @@ class SCI:
             response = self.device.read_until(b'\x03')
 
         if len(response) == 0:
-            raise Exception('COMMAND - Timeout occured')
+            raise Exception('SETVALUE - Timeout occured')
         rsp = self._decode(bytearray(response), cmd.commandID)
 
         if rsp.responseDesignator == 'ACK':
             return
         elif rsp.responseDesignator == 'ERR':
-            raise Exception(f'SETVAR - Error: {rsp.dataArray[0]}')
+            raise Exception(f'SETVALUE - Error: {rsp.dataArray[0]}')
         elif rsp.responseDesignator == 'NAK':
-            raise Exception('SETVAR - Variable unknown')
+            raise Exception('SETVALUE - Variable unknown')
 
 
     def getvalue(self, parameter : Parameter) -> Union[float,int]:
@@ -356,16 +356,16 @@ class SCI:
             response = self.device.read_until(b'\x03')
 
         if len(response) == 0:
-            raise Exception('COMMAND - Timeout occured')
+            raise Exception('GETVALUE - Timeout occured')
 
         rsp = self._decode(bytearray(response), cmd.commandID)
 
         if rsp.responseDesignator == 'ACK':
             return self._reinterpretDecodedIntToDtype(rsp.dataArray[0], parameter.type)
         elif rsp.responseDesignator == 'ERR':
-            raise Exception(f'SETVAR - Error: {rsp.dataArray[0]}')
+            raise Exception(f'GETVALUE - Error: {rsp.dataArray[0]}')
         elif rsp.responseDesignator == 'NAK':
-            raise Exception('SETVAR - Variable unknown')
+            raise Exception('GETVALUE - Variable unknown')
         
     
 
