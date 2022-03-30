@@ -1,27 +1,30 @@
-import SCI
+from SCI import *
+from time import time
 
-cmd = SCI.Command()
-cmd.commandID = SCI.CommandID.SETVAR
-cmd.number = 1
-cmd.dataArray = [-2343]
-cmd.datatypeArray = [SCI.Datatype.DTYPE_INT32]
+par1 = Parameter(1, Datatype.DTYPE_UINT16)
+par2 = Parameter(2, Datatype.DTYPE_F32)
 
-inst = SCI.SCI('COM7', 64, numberFormat=SCI.NumberFormat.HEX)
+fcn1 = Function(1, returnTypeList = [Datatype.DTYPE_F32]*20)
 
-packet = inst._encode(cmd)
-packet.insert(0,2)
-packet.append(3)
+inst = SCI('COM3', 128, baud = 2000000, numberFormat=NumberFormat.FLOAT)
+
+start = time()
+#value = inst.getvalue(par1)
+data = inst.command(function=fcn1)
+print(time() - start)
+# packet.insert(0,2)
+# packet.append(3)
 
 
-# msg = 'A>01020304050607'
-# msg = 'A!DAT;3;567,A7,1'
-# msgArr = bytearray(msg,'ASCII')
-# msgArr.insert(0,2)
-# msgArr.append(3)
-print(packet)
+# # msg = 'A>01020304050607'
+# # msg = 'A!DAT;3;567,A7,1'
+# # msgArr = bytearray(msg,'ASCII')
+# # msgArr.insert(0,2)
+# # msgArr.append(3)
+# print(packet)
 
-# packet = inst._encode(cmd)
-received = inst._decode(packet, SCI.CommandID.SETVAR)
-testint = int(received.responseDesignator, 16)
-testVar = inst._reinterpretDecodedIntToDtype(testint, SCI.Datatype.DTYPE_INT32)
-print(testVar)
+# # packet = inst._encode(cmd)
+# received = inst._decode(packet, SCI.CommandID.SETVAR)
+# testint = int(received.responseDesignator, 16)
+# testVar = inst._reinterpretDecodedIntToDtype(testint, SCI.Datatype.DTYPE_INT32)
+print(data)
