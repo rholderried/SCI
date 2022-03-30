@@ -26,14 +26,23 @@ class CommandID(Enum):
     UPSTREAM    = '>'
     DOWNSTREAM  = '<'
 
-class Dataformat(Enum):
-    DTYPE_UINT8    = 'B'
-    DTYPE_INT8     = 'b'
-    DTYPE_UINT16   = 'H'
-    DTYPE_INT16    = 'h'
-    DTYPE_UINT32   = 'L'
-    DTYPE_INT32    = 'l'
-    DTYPE_F32      = 'f'
+class Datatype(Enum):
+    DTYPE_UINT8    = ('B',1)
+    DTYPE_INT8     = ('b',1)
+    DTYPE_UINT16   = ('H',2)
+    DTYPE_INT16    = ('h',2)
+    DTYPE_UINT32   = ('L',4)
+    DTYPE_INT32    = ('l',4)
+    DTYPE_F32      = ('f',4)
+
+# class Bytelength(Enum):
+#     DTYPE_UINT8    = '1'
+#     DTYPE_INT8     = '1'
+#     DTYPE_UINT16   = '2'
+#     DTYPE_INT16    = '2'
+#     DTYPE_UINT32   = '4'
+#     DTYPE_INT32    = '4'
+#     DTYPE_F32      = '4'
 
 class Response:
     def __init__(self):
@@ -45,10 +54,25 @@ class Response:
 
 class Command:
     def __init__(self):
-        self.number     : Optional[int]                     = None
-        self.commandID  : Optional[CommandID]               = None
-        self.dataArray  : Optional[Iterable[float, int]]    = None
-        self.dataFormat : Optional[Iterable[Dataformat]]    = None
+        self.number         : Optional[int]                     = None
+        self.commandID      : Optional[CommandID]               = None
+        self.dataArray      : Optional[Iterable[float, int]]    = None
+        self.datatypeArray  : Optional[Iterable[Datatype]]      = None
+
+class Parameter:
+
+    def __init__(self, number : int, type : Datatype, description : Optional[str] = None):
+        self.description    : Optional[str] = description
+        self.number         : int           = number
+        self.type           : Datatype      = type
+
+class Function:
+
+    def __init__(self, number : int,  argTypeList : Iterable[Union[Datatype, None]] = None, returnTypeList : Iterable[Union[Datatype, None]] = None, description : Optional[str] = None):
+        self.description    : Optional[str]                     = description
+        self.number         : int                               = number
+        self.argTypeList    : Optional[Iterable[Datatype]]      = argTypeList
+        self.returnTypeList : Optional[Iterable[Datatype]]      = returnTypeList
 
 class SCI:
     STX = 2
@@ -161,12 +185,12 @@ class SCI:
             # if not isinstance(command.commandID, CommandID):
             #     raise ValueError('command.commandID must be an instance of the CommandID class.')
 
-            if command.commandID is not None and command.dataFormat is not None:
+            if command.commandID is not None and command.datatypeArray is not None:
 
-                # if not hasattr(command.dataArray, '__iter__') or not hasattr(command.dataFormat, '__iter__'):
-                #     raise ValueError('command.dataArray and command.dataFormat must be iterables.')
+                # if not hasattr(command.dataArray, '__iter__') or not hasattr(command.datatypeArray, '__iter__'):
+                #     raise ValueError('command.dataArray and command.datatypeArray must be iterables.')
                 
-                formatArray = f'{"".join(form.value for form in command.dataFormat)}'
+                formatArray = f'{"".join(type.value[0] for type in command.datatypeArray)}'
                 byteStringArray = [struct.pack(f'>{formatItem}', dataItem).hex().upper().lstrip('0') for formatItem, dataItem in zip(formatArray, command.dataArray)]
 
             if byteStringArray is not None:
@@ -179,7 +203,7 @@ class SCI:
 
             num = f'{int(command.number)}'
 
-            if command.commandID is not None and command.dataFormat is not None:
+            if command.commandID is not None and command.datatypeArray is not None:
 
                 # if not hasattr(command.dataArray, '__iter__'):
                 #     raise ValueError('command.dataArray must be iterable.')
@@ -204,76 +228,131 @@ class SCI:
         packet.append(self.ETX)
         self.device.write(packet)
     
+    def _reinterpretDecodedIntToDtype (self, decoded : int, type : Datatype) -> Union[float, int]:
+        byteLength = type.value[1]
+        intArr = struct.pack(f'>I', decoded)
+        intArr = intArr[-byteLength:]
+        return struct.unpack(f'>{type.value[0]}', intArr)[0]
+
+    
     #==============================================================================
-    def command(self, number : int, paramList : Iterable[Union[float, int, None]] = None, typeList : Iterable[Union[Dataformat, None]] = None) -> List[Union[float, int]]:
+    def command(self, function : Function, paramList : Iterable[Union[float, int, None]] = None) -> List[Union[float, int]]:
         """
         Send a command to the SCI device
         """
 
+        if paramList is not None:
+            if len(paramList) != len(function.argTypeList):
+                raise Exception('Length of parameter list does not match the length of the type specifier list.')
+
         # Construct command
         cmd = Command()
-        cmd.number      = number
-        cmd.commandID   = CommandID.SETVAR
+        cmd.number      = function.number
+        cmd.commandID   = CommandID.COMMAND
         cmd.dataArray   = paramList
-        cmd.dataFormat  = typeList
+        cmd.datatypeArray  = function.argTypeList
 
-        firstCycleHandled = False
-        expectedDatalen = 1
+        sendOnce = True
         data = []
         
 
         # Query is allowed just once at a time!
         with self.ressourceLock:
             
-            while (len(data) < expectedDatalen):
+            while (len(data) < len(function.returnTypeList) or sendOnce):
                 packet = self._encode(cmd)
                 self.device.flush()
                 self._send(packet)
                 response = self.device.read_until(b'\x03')
-                rsp = self._decode(response, cmd.commandID)
+                if len(response) == 0:
+                    raise Exception('COMMAND - Timeout occured')
+                rsp = self._decode(bytearray(response), cmd.commandID)
 
                 # This command does not need further processing
                 if rsp.responseDesignator == 'ACK' or rsp.responseDesignator == 'UPS':
                     break
                 elif rsp.responseDesignator == 'ERR':
-                    raise Exception(f'Command error: {rsp.dataArray[0]}')
+                    raise Exception(f'COMMAND - Error: {rsp.dataArray[0]}')
                 elif rsp.responseDesignator == 'NAK':
-                    raise Exception('Command unknown')
-                elif rsp.responseDesignator == 'DAT':
-                    expectedDatalen = rsp.dataLength
+                    raise Exception('COMMAND - Unknown Command')
+                # elif rsp.responseDesignator == 'DAT':
+                #     expectedDatalen = rsp.dataLength
                 
                 # Here we also land if the response designator is None
                 data.extend(rsp.dataArray.copy())
+                sendOnce = False
         
+            # Type conversion
+            if len(data > 0):
+                if self.numberFormat.name == 'HEX':
+                    data = [self._reinterpretDecodedIntToDtype(dat, type) for dat, type in zip(data, function.returnTypeList)]
+                else:
+                    data = [dat if function.returnTypeList[i].name == 'DTYPE_F32' else int(dat) for dat,i in zip(data, len(function.returnTypeList))]
+
         return data
 
     #==============================================================================
-    def setvalue(self, number, value):
-        params = [number, self.EXCLAM, value]
+    def setvalue(self, parameter : Parameter, value : Union[float, int]):
+        """
+        Sets a variable of the variable struct
+        """
+
+        # Construct command
+        cmd = Command()
+        cmd.number      = parameter.number
+        cmd.commandID   = CommandID.SETVAR
+        cmd.dataArray   = [value]
+        cmd.datatypeArray  = [parameter.type]
+        response        = None
         
         # Query is allowed just once at a time!
         with self.ressourceLock:
+            packet = self._encode(cmd)
             self.device.flush()
-            self._sendmessage(params)
-            response = self.device.read_until(b'\x03') 
+            self._send(packet)
+            response = self.device.read_until(b'\x03')
 
-        _, resp_val = self._decode_message(response,self.EXCLAM)
+        if len(response) == 0:
+            raise Exception('COMMAND - Timeout occured')
+        rsp = self._decode(bytearray(response), cmd.commandID)
+
+        if rsp.responseDesignator == 'ACK':
+            return
+        elif rsp.responseDesignator == 'ERR':
+            raise Exception(f'SETVAR - Error: {rsp.dataArray[0]}')
+        elif rsp.responseDesignator == 'NAK':
+            raise Exception('SETVAR - Variable unknown')
+
+
+    def getvalue(self, parameter : Parameter) -> Union[float,int]:
+        """
+        gets a variable value of the variable struct
+        """
         
-        return float(resp_val)
-
-    def getvalue(self, number):
-        params = [number, self.QUESTION]
+        # Construct command
+        cmd = Command()
+        cmd.number      = parameter.number
+        cmd.commandID   = CommandID.GETVAR
+        response        = None
         
         # Query is allowed just once at a time!
         with self.ressourceLock:
+            packet = self._encode(cmd)
             self.device.flush()
-            self._sendmessage(params)
-            response = self.device.read_until(b'\x03') 
+            self._send(packet)
+            response = self.device.read_until(b'\x03')
 
-        _, resp_val = self._decode_message(response,self.QUESTION)
+        if len(response) == 0:
+            raise Exception('COMMAND - Timeout occured')
 
-        return float(resp_val)
+        rsp = self._decode(response, cmd.commandID)
 
+        if rsp.responseDesignator == 'ACK':
+            return self._reinterpretDecodedIntToDtype(rsp.dataArray[0], parameter.type)
+        elif rsp.responseDesignator == 'ERR':
+            raise Exception(f'SETVAR - Error: {rsp.dataArray[0]}')
+        elif rsp.responseDesignator == 'NAK':
+            raise Exception('SETVAR - Variable unknown')
         
     
 
