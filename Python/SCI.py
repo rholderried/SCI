@@ -38,18 +38,18 @@ class Datatype(Enum):
 
 class Response:
     def __init__(self):
-        self.number             : Optional[int]                     = None
-        self.responseDesignator : Optional[str]                     = None
-        self.dataLength         : Optional[int]                     = None
-        self.dataArray          : Optional[List[Union[float, int]]] = None
-        self.upstreamData       : Optional[bytearray]               = None
+        self.number             : Optional[int]           = None
+        self.responseDesignator : Optional[str]           = None
+        self.dataLength         : Optional[int]           = None
+        self.dataArray          : List[Union[float, int]] = []
+        self.upstreamData       : bytearray               = bytearray([])
 
 class Command:
     def __init__(self):
-        self.number         : Optional[int]                     = None
-        self.commandID      : Optional[CommandID]               = None
-        self.dataArray      : Optional[Iterable[float, int]]    = None
-        self.datatypeArray  : Optional[Iterable[Datatype]]      = None
+        self.number         : Optional[int]         = None
+        self.commandID      : Optional[CommandID]   = None
+        self.dataArray      : Iterable[float, int]  = []
+        self.datatypeArray  : Iterable[Datatype]    = []
 
 class Parameter:
 
@@ -60,16 +60,16 @@ class Parameter:
 
 class Function:
 
-    def __init__(self, number : int,  argTypeList : Iterable[Union[Datatype, None]] = None, returnTypeList : Iterable[Union[Datatype, None]] = None, description : Optional[str] = None, requestsUpstream : bool = False):
+    def __init__(self, number : int,  argTypeList : Iterable[Datatype] = [], returnTypeList : Iterable[Datatype] = [], description : Optional[str] = None, requestsUpstream : bool = False):
 
-        if requestsUpstream and returnTypeList is not None:
+        if requestsUpstream and len(returnTypeList) > 0:
             raise ValueError('FUNCTION - Specifying return data types of a function requesting an upstream is not possible.')
 
-        self.description        : Optional[str]                 = description
-        self.number             : int                           = number
-        self.argTypeList        : Optional[Iterable[Datatype]]  = argTypeList
-        self.returnTypeList     : Optional[Iterable[Datatype]]  = returnTypeList
-        self.requestsUpstream   : bool                          = requestsUpstream
+        self.description        : Optional[str]         = description
+        self.number             : int                   = number
+        self.argTypeList        : Iterable[Datatype]    = argTypeList
+        self.returnTypeList     : Iterable[Datatype]    = returnTypeList
+        self.requestsUpstream   : bool                  = requestsUpstream
 
 class SCI:
     STX = 2
@@ -193,7 +193,7 @@ class SCI:
             # if not isinstance(command.commandID, CommandID):
             #     raise ValueError('command.commandID must be an instance of the CommandID class.')
 
-            if command.commandID is not None and command.datatypeArray is not None:
+            if len(command.datatypeArray) > 0:
 
                 # if not hasattr(command.dataArray, '__iter__') or not hasattr(command.datatypeArray, '__iter__'):
                 #     raise ValueError('command.dataArray and command.datatypeArray must be iterables.')
@@ -422,7 +422,7 @@ class SCI:
 
             self.device.flush()
 
-            while (len(data) < len(upstreamSize)):
+            while (len(data) < upstreamSize):
 
                 packet = self._encode(cmd)
 
