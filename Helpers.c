@@ -252,7 +252,7 @@ int8_t hexToStr2 (uint8_t *pui8_strBuf, uint8_t *pui8_val, uint8_t ui8_byteCount
         // Determine number of digits to pass
         while (j >= 0)
         {
-            if((pui8_val[(j + 2) >> 1] & ((uint32_t)0xF << (j << 2))) > 0)
+            if((pui8_val[j >> 1] & ((uint32_t)0xF << (j << 2))) > 0)
                 break;
             else
                 j--;
@@ -273,7 +273,7 @@ int8_t hexToStr2 (uint8_t *pui8_strBuf, uint8_t *pui8_val, uint8_t ui8_byteCount
     while (j >= 0)
     {
         k = j << 2; // k = j * 4
-        pui8_strBuf[numberOfDigits - j] = hexNibbleConv[(pui8_val[(j + 2) >> 1] & ((uint32_t)0xF << k)) >> k];
+        pui8_strBuf[numberOfDigits - j] = hexNibbleConv[(pui8_val[j >> 1] & ((uint32_t)0xF << k)) >> k];
         j--;
     }
 
