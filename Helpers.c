@@ -233,3 +233,51 @@ int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val, uint8_t ui8_maxDataN
 
     terminate: return numberOfDigits;
 }
+
+//=============================================================================
+int8_t hexToStr2 (uint8_t *pui8_strBuf, uint8_t *pui8_val, uint8_t ui8_byteCount, bool shrinkZeros)
+{
+    int8_t j;
+    int8_t numberOfDigits = 0;
+    uint8_t k;
+
+    // Optionally restrict the data length
+    if (ui8_byteCount > 4)
+        j = 7;
+    else
+        j = (ui8_byteCount << 1) - 1;
+
+    if(shrinkZeros)
+    {
+        // Determine number of digits to pass
+        while (j >= 0)
+        {
+            if((pui8_val[(j + 2) >> 1] & ((uint32_t)0xF << (j << 2))) > 0)
+                break;
+            else
+                j--;
+        }
+    }
+    
+    // Take care for the 0
+    if (j < 0)
+    {
+        *pui8_strBuf = '0';
+        numberOfDigits = 1;
+        goto terminate;
+    }
+
+    numberOfDigits = j;
+
+    // Convert number (Big endian format)
+    while (j >= 0)
+    {
+        k = j << 2; // k = j * 4
+        pui8_strBuf[numberOfDigits - j] = hexNibbleConv[(pui8_val[(j + 2) >> 1] & ((uint32_t)0xF << k)) >> k];
+        j--;
+    }
+
+    numberOfDigits++;
+
+    terminate: return numberOfDigits;
+}
