@@ -41,5 +41,7 @@ bool strToHex (uint8_t *pui8_strBuf, uint32_t *pui32_val);
 
 int8_t hexToStr (uint8_t *pui8_strBuf, uint32_t *pui32_val, uint8_t ui8_maxDataNibbles, bool shrinkZeros);
 
+int8_t hexToStr2 (uint8_t *pui8_strBuf, uint8_t *pui8_val, uint8_t ui8_byteCount, bool shrinkZeros);
+
 
 #endif // _HELPERS_H_

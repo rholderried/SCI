@@ -196,7 +196,9 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
     {
         while (ui8_maxSize > (ui8_currentDataSize + 1) && p_inst->responseControl.rsp.info.ui32_datLen > 0)
         {
-            ui8_currentDataSize += hexToStr(p_buf,(uint32_t*)&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx],2,false);
+            // ui8_currentDataSize += hexToStr(p_buf,(uint32_t*)&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx],2,false);
+            ui8_currentDataSize += hexToStr2(p_buf,&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx],1,false);
+
             p_inst->responseControl.rsp.info.ui32_datLen--;
             p_inst->responseControl.ui32_byteIdx++;
             p_buf += 2;
