@@ -77,7 +77,7 @@ class SCI:
 
 
     #==============================================================================
-    def __init__(self, port, maxPacketSize, baud : int = 115200, timeout : float = 0.4, numberFormat : NumberFormat = NumberFormat.HEX):
+    def __init__(self, port, maxPacketSize, baud : int = 115200, timeout : float = 1, numberFormat : NumberFormat = NumberFormat.HEX):
 
         self.ressourceLock = threading.Lock()
 
@@ -420,12 +420,10 @@ class SCI:
 
         with self.ressourceLock:
 
-            self.device.flush()
-
             while (len(data) < upstreamSize):
 
                 packet = self._encode(cmd)
-
+                self.device.flush()
                 self._send(packet)
 
                 # TODO: This has to be replaced by a function reading number of bytes if the upstream has been switched to binary format
