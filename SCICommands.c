@@ -172,6 +172,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                 // Change the command type
                 p_inst->responseControl.rsp.e_cmdType = rsp.e_cmdType;
             }
+            break;
             // TODO: Error handling
 
 
