@@ -15,8 +15,8 @@ bool testTxCb(uint8_t* p_buf, uint8_t size)
 int main (void)
 {
     // Test Helpers
-    //TestHelpers_hexToStr();
+    TestHelpers_hexToStr(0x12345678);
     //TestHelpers_strToHex();
-    TestSCI_generateReads();
+    //TestSCI_generateReads();
     return 0;
 }

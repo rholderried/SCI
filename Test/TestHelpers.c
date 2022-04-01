@@ -3,15 +3,19 @@
 #include <stdio.h>
 #include "Helpers.h"
 
-void TestHelpers_hexToStr(void)
+void TestHelpers_hexToStr(uint32_t ui32_testval)
 {
+    uint8_t ui8_valBuf[4] = {0};
     uint8_t ui8_testBuf[10] ={0};
-    float f_testVal = 3.5f;
-    uint32_t ui32_testVal = 0xA5A5A5A5;
-    uint8_t ui8_testVal_3 = 0xF7;
     int8_t size = 0;
 
-    size = hexToStr(ui8_testBuf, (uint32_t*)&ui8_testVal_3, 2, true);
+    fillByteBufBigEndian(ui8_valBuf, (uint8_t*)&ui32_testval, 4);
+
+    for (uint8_t i = 0; i < 4; i++)
+    {
+        size += hexToStrByte(&ui8_testBuf[i << 1], &ui8_valBuf[i], false);
+    }
+    
     ui8_testBuf[size] = '\0';
 
     printf("Conversion Result: %s", (char*)ui8_testBuf);

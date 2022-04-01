@@ -10,6 +10,6 @@
  * Function declarations
  *****************************************************************************/
 void TestHelpers_strToHex(void);
-void TestHelpers_hexToStr(void);
+void TestHelpers_hexToStr(uint32_t ui32_testval);
 
 #endif // _TESTHELPERS_H_

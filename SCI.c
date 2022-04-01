@@ -264,7 +264,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
 
     // Convert variable number to ASCII
     #ifdef VALUE_MODE_HEX
-    ui8_size = (uint8_t)hexToStr(pui8_buf, (uint32_t*)&response.i16_num, 4, true);
+    ui8_size = (uint8_t)hexToStrWord(pui8_buf, &response.i16_num, true);
     #else
     ui8_size = ftoa(pui8_buf, (float)response.i16_num, true);
     #endif
@@ -286,7 +286,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
                 ui8_size += 4;
                 // Write the data value into the buffer
                 #ifdef VALUE_MODE_HEX
-                ui8_size += (uint8_t)hexToStr(pui8_buf, &response.val.ui32_hex, 8, true);
+                ui8_size += (uint8_t)hexToStrDword(pui8_buf, &response.val.ui32_hex, true);
                 #else
                 ui8_size += ftoa(pui8_buf, response.val.f_float, true);
                 #endif
@@ -314,7 +314,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
                         *pui8_buf++ = ';';
                         ui8_size++;
                         #ifdef VALUE_MODE_HEX
-                        ui8_asciiSize = (uint8_t)hexToStr(pui8_buf, &response.info.ui32_datLen, 8, true);
+                        ui8_asciiSize = (uint8_t)hexToStrDword(pui8_buf, &response.info.ui32_datLen, true);
                         #else
                         ui8_asciiSize = ftoa(pui8_buf, (float)response.info.ui32_datLen, true);
                         #endif
@@ -360,7 +360,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
             ui8_size ++;
             // Write the data value into the buffer
             #ifdef VALUE_MODE_HEX
-            ui8_size += (uint8_t)hexToStr(pui8_buf, (uint32_t*)&response.info.ui16_error, 4, true);
+            ui8_size += (uint8_t)hexToStrWord(pui8_buf, &response.info.ui16_error, true);
             #else
             ui8_size += ftoa(pui8_buf, (float)response.info.ui16_error, true);
             #endif

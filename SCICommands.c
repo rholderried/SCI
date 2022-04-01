@@ -198,7 +198,7 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
         while (ui8_maxSize > (ui8_currentDataSize + 1) && p_inst->responseControl.rsp.info.ui32_datLen > 0)
         {
             // ui8_currentDataSize += hexToStr(p_buf,(uint32_t*)&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx],2,false);
-            ui8_currentDataSize += hexToStr2(p_buf,&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx],1,false);
+            ui8_currentDataSize += hexToStrByte(p_buf,&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx], false);
 
             p_inst->responseControl.rsp.info.ui32_datLen--;
             p_inst->responseControl.ui32_byteIdx++;
@@ -242,7 +242,7 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
             ui32_currentHexVal = *(uint32_t*)&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx];
 
             #ifdef VALUE_MODE_HEX
-            ui8_asciiSize = (uint8_t)hexToStr(ui8_datBuf, &ui32_currentHexVal, (ui8_datLen << 1), true);
+            ui8_asciiSize = (uint8_t)hexToStrDword(ui8_datBuf, &ui32_currentHexVal, true);
             #else
 
             ui32_currentHexVal &= ((uint32_t)0xFFFFFFFF >> ((4 - ui8_datLen) << 3));

@@ -23,15 +23,15 @@ DTYPE e_testDtypes[]={eDTYPE_F32};
 #ifdef VALUE_MODE_HEX
 COMMAND_CB_STATUS testCmd (uint32_t* pui32_valArray, uint8_t ui8_valArrayLen, PROCESS_INFO *p_info)
 {
-    uint16_t * pui16_buf = ui8_testBuffer;
-    for (uint8_t i = 0; i < 10; i++)
-        pui16_buf[i] = i;
+    // uint16_t * pui16_buf = ui8_testBuffer;
+    // for (uint8_t i = 0; i < 10; i++)
+    //     pui16_buf[i] = i;
 
-    p_info->pui8_buf = ui8_testBuffer;
-    p_info->ui32_datLen = 10;
-    p_info->eDataFormat = e_testDtypes;
-    p_info->ui16_dataFormatLen= 1;
-    return eCOMMAND_STATUS_SUCCESS_DATA;
+    // p_info->pui8_buf = ui8_testBuffer;
+    // p_info->ui32_datLen = 10;
+    // // p_info->eDataFormat = e_testDtypes;
+    // // p_info->ui16_dataFormatLen= 1;
+    return eCOMMAND_STATUS_SUCCESS;
 }
 #else
 COMMAND_CB_STATUS testCmd (float* pf_valArray, uint8_t ui8_valArrayLen, PROCESS_INFO *p_info)
