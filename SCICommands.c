@@ -132,8 +132,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
 
                     // Fill the response control struct
                     p_inst->responseControl.ui8_controlBits.firstPacketNotSent  = true;
-                    p_inst->responseControl.ui16_typeIdx                        = 0;
-                    p_inst->responseControl.ui32_byteIdx                        = 0;
+                    p_inst->responseControl.ui32_dataIdx                        = 0;
                     
                     if (cmdStatus != eCOMMAND_STATUS_ERROR && cmdStatus != eCOMMAND_STATUS_UNKNOWN)
                     {
@@ -284,6 +283,8 @@ void clearResponseControl(SCI_COMMANDS *p_inst)
     // Free previously allocated memory
     if (p_inst->responseControl.rsp.info.ui8_infoFlagBits.dataBufDynamic == true)
         free(p_inst->responseControl.rsp.info.pui32_dataBuf);
+    if (p_inst->responseControl.rsp.info.ui8_infoFlagBits.upstreamBufDynamic == true)
+        free(p_inst->responseControl.rsp.info.pui8_upStreamBuf);
 
     // Clean the structure
     memcpy(&p_inst->responseControl, &cleanObj, sizeof(RESPONSECONTROL));

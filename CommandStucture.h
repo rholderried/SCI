@@ -39,7 +39,8 @@ typedef struct
         struct
         {
             uint8_t dataBufDynamic      : 1;
-            uint8_t reserved            : 7;
+            uint8_t upstreamBufDynamic  : 1;
+            uint8_t reserved            : 6;
         }ui8_infoFlagBits;
 
         uint8_t ui8_infoFlagByte;
