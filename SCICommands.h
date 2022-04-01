@@ -85,8 +85,7 @@ typedef struct
         }ui8_controlBits;
         uint8_t ui8_controlByte;
     };
-    uint16_t    ui16_typeIdx;
-    uint32_t    ui32_byteIdx;
+    uint32_t    ui32_dataIdx;
     RESPONSE    rsp;
 }RESPONSECONTROL;
 

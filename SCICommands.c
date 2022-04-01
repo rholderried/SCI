@@ -189,19 +189,19 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
 {
     uint8_t ui8_currentDataSize = 0;
 
-    // Check if there is a valid buffer pointer passed
-    if (p_inst->responseControl.rsp.info.pui8_buf == NULL)
-        return 0;
-
     if (p_inst->responseControl.rsp.e_cmdType == eCOMMAND_TYPE_UPSTREAM)
     {
+        // Check if there is a valid buffer pointer passed
+        if (p_inst->responseControl.rsp.info.pui8_upStreamBuf == NULL)
+            return 0;
+
         while (ui8_maxSize > (ui8_currentDataSize + 1) && p_inst->responseControl.rsp.info.ui32_datLen > 0)
         {
             // ui8_currentDataSize += hexToStr(p_buf,(uint32_t*)&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx],2,false);
-            ui8_currentDataSize += hexToStrByte(p_buf,&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx], false);
+            ui8_currentDataSize += hexToStrByte(p_buf,&p_inst->responseControl.rsp.info.pui8_upStreamBuf[p_inst->responseControl.ui32_byteIdx], false);
 
             p_inst->responseControl.rsp.info.ui32_datLen--;
-            p_inst->responseControl.ui32_byteIdx++;
+            p_inst->responseControl.ui32_dataIdx++;
             p_buf += 2;
         }
     }
@@ -218,7 +218,7 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
         #endif
 
         // Check if there is a valid data format table pointer passed
-        if (p_inst->responseControl.rsp.info.pe_dataTypeBuf == NULL)
+        if (p_inst->responseControl.rsp.info.pui32_dataBuf == NULL)
             return 0;
 
         while (true)
@@ -234,25 +234,7 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
                 break;
             }
 
-            // Handle data format buffer overflow
-            if (p_inst->responseControl.ui16_typeIdx >= p_inst->responseControl.rsp.info.ui16_dataTypeBufLen)
-                p_inst->responseControl.ui16_typeIdx = 0;
-
-            ui8_datLen = ui8_byteLength[p_inst->responseControl.rsp.info.pe_dataTypeBuf[p_inst->responseControl.ui16_typeIdx]];
-            ui32_currentHexVal = *(uint32_t*)&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx];
-
-            #ifdef VALUE_MODE_HEX
-            ui8_asciiSize = (uint8_t)hexToStrDword(ui8_datBuf, &ui32_currentHexVal, true);
-            #else
-
-            ui32_currentHexVal &= ((uint32_t)0xFFFFFFFF >> ((4 - ui8_datLen) << 3));
-            if (p_inst->responseControl.rsp.info.eDataFormat[p_inst->responseControl.ui16_typeIdx] == eDTYPE_F32)
-                f_passVal = *(float*)&ui32_currentHexVal;
-            else
-                f_passVal = (float)ui32_currentHexVal;
-
-            ui8_asciiSize = ftoa(ui8_datBuf, f_passVal, true);
-            #endif
+            ui8_asciiSize = (uint8_t)hexToStrDword(ui8_datBuf, &p_inst->responseControl.rsp.info.pui32_dataBuf[p_inst->responseControl.ui32_dataIdx], true);
 
             // Fits the value in the buffer?
             if ((ui8_currentDataSize + ui8_asciiSize) < ui8_maxSize)
@@ -262,9 +244,8 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
                 ui8_currentDataSize += ui8_asciiSize;
 
                 // Handle all indices
-                p_inst->responseControl.ui16_typeIdx++;
                 p_inst->responseControl.rsp.info.ui32_datLen--;
-                p_inst->responseControl.ui32_byteIdx += ui8_datLen;
+                p_inst->responseControl.ui32_dataIdx++;
                 p_buf += ui8_asciiSize;
 
                 if (ui8_maxSize > ui8_currentDataSize)
@@ -302,9 +283,7 @@ void clearResponseControl(SCI_COMMANDS *p_inst)
 
     // Free previously allocated memory
     if (p_inst->responseControl.rsp.info.ui8_infoFlagBits.dataBufDynamic == true)
-        free(p_inst->responseControl.rsp.info.pui8_buf);
-    if (p_inst->responseControl.rsp.info.ui8_infoFlagBits.datatypeBufDynamic == true)
-        free(p_inst->responseControl.rsp.info.pe_dataTypeBuf);
+        free(p_inst->responseControl.rsp.info.pui32_dataBuf);
 
     // Clean the structure
     memcpy(&p_inst->responseControl, &cleanObj, sizeof(RESPONSECONTROL));

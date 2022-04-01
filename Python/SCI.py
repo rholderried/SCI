@@ -138,11 +138,8 @@ class SCI:
         if cmdID.name == 'COMMAND':
             # Data transfer
             if len(msgDat) > 2:
-                datStrArr = msgDat[2].split(',')
-                if self.numberFormat.name == 'HEX':
-                    rsp.dataArray = [int(data, 16) for data in datStrArr]
-                else: # number format is set to float
-                    rsp.dataArray = [float(data) for data in datStrArr]
+                datStrArr = msgDat[2].split(',')    
+                rsp.dataArray = [int(data, 16) for data in datStrArr]
             
             # Data Transfer and Upstream
             if len(msgDat) > 1:
@@ -154,10 +151,7 @@ class SCI:
             # If there is a message distributed over several packages
             elif ongoing:
                 datStrArr = msgDat[0].split(',')
-                if self.numberFormat.name == 'HEX':
-                    rsp.dataArray = [int(data, 16) for data in datStrArr]
-                else: # number format is set to float
-                    rsp.dataArray = [float(data) for data in datStrArr]
+                rsp.dataArray = [int(data, 16) for data in datStrArr]
 
         elif cmdID.name == 'GETVAR' or cmdID == 'SETVAR':
             # Data Transfer and Upstream
