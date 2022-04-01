@@ -89,7 +89,7 @@ typedef struct
     RESPONSE    rsp;
 }RESPONSECONTROL;
 
-#define RESPONSECONTROL_DEFAULT {{.ui8_controlByte = 0}, 0, 0, RESPONSE_DEFAULT}
+#define RESPONSECONTROL_DEFAULT {{.ui8_controlByte = 0}, 0, RESPONSE_DEFAULT}
 
 typedef struct
 {
