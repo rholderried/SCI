@@ -26,11 +26,11 @@
 /******************************************************************************
  * Defines
  *****************************************************************************/
-#define RX_PACKET_LENGTH    30
-#define TX_PACKET_LENGTH    30
+#define RX_PACKET_LENGTH    128
+#define TX_PACKET_LENGTH    128
 
 #define SIZE_OF_VAR_STRUCT  5
-#define SIZE_OF_CMD_STRUCT  1
+#define SIZE_OF_CMD_STRUCT  2
 #define MAX_NUMBER_OF_EEPROM_VARS 10
 
 // Mode configuration

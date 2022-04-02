@@ -215,9 +215,7 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
     {
         bool    b_commaSet = false;
         uint8_t ui8_asciiSize;
-        uint8_t ui8_datLen;
         uint8_t ui8_datBuf[20];
-        uint32_t ui32_currentHexVal;
 
         #ifndef VALUE_MODE_HEX
         float   f_passVal;
