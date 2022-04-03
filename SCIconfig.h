@@ -41,8 +41,4 @@
 #define EEPROM_ADDRESSTYPE  EEPROM_WORD_ADDRESSABLE
 #define ADDRESS_OFFET       0
 
-// Send parameters
-#define MAX_COUNT_DATA_FORMATS  10
-
-
 #endif // _SCICONFIG_H_
