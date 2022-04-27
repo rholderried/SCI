@@ -389,3 +389,15 @@ uint16_t getEEPROMAddress(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
 
     return ui16_address;
 }
+
+//=============================================================================
+bool getVarPtr(VAR_ACCESS* p_varAccess, VAR** p_Var, int16_t i16_varNum)
+{
+    if ((i16_varNum > 0 && i16_varNum))    
+    {
+        *p_Var = &p_varAccess->p_varStruct[i16_varNum - 1];
+        return true;
+    }
+    
+    return false;
+}

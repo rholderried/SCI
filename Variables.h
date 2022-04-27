@@ -149,6 +149,8 @@ bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varN
 
 uint16_t getEEPROMAddress(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
+bool getVarPtr(VAR_ACCESS* p_varAccess, VAR** p_Var, int16_t i16_varNum);
+
 /******************************************************************************
  * Global variable declaration
  *****************************************************************************/
