@@ -134,6 +134,12 @@ void SCI_statemachine(void)
 }
 
 //=============================================================================
+bool SCI_GetVarFromStruct(int16_t i16_varNum, VAR** p_Var)
+{
+    return getVarPtr(&sci.varAccess, p_Var, i16_varNum);
+}
+
+//=============================================================================
 COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
 {
     uint8_t i = 0;

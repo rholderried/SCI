@@ -142,6 +142,13 @@ void SCI_statemachine   (void);
  */
 void SCI_receiveData    (uint8_t ui8_data);
 
+/** \brief Get a single variable pointer from the variable structure.
+ *
+ * @param i16_varNum    Variable number of the desired variable.
+ * @param p_Var         Pointer address to be set to the var struct variable.
+ */
+bool SCI_GetVarFromStruct(int16_t i16_varNum, VAR** p_Var);
+
 /** \brief Parses incoming message strings.
  *
  * @param *pui8_buf         Pointer to the buffer that holds the message.
