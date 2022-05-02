@@ -35,7 +35,7 @@ const uint8_t ui8_byteLength[7] = {1,1,2,2,4,4,4};
  *****************************************************************************/
 
 //=============================================================================
-bool SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
+tSCI_ERROR SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
 {
     // Initialize the callbacks
     sci.varAccess.readEEPROM_cb                 = callbacks.readEEPROMCallback;
@@ -85,15 +85,16 @@ void SCI_statemachine(void)
         case ePROTOCOL_EVALUATING:
             {
                 uint8_t *   pui8_buf;
-                COMMAND     cmd;
-                RESPONSE    rsp; 
+                COMMAND     cmd = COMMAND_DEFAULT;
+                RESPONSE    rsp = RESPONSE_DEFAULT; 
                 uint8_t     ui8_msgSize = readBuf(&sci.rxFIFO, &pui8_buf);
+                tSCI_ERROR  eError = eSCI_ERROR_NONE;
 
                 // Clear Datalink State
                 acknowledgeRx(&sci.datalink);
 
                 // Parse the command (skip STX and don't care for ETX)
-                cmd = commandParser(pui8_buf, ui8_msgSize);
+                eError = commandParser(pui8_buf, ui8_msgSize, &cmd);
 
                 rsp = executeCmd(&sci.sciCommands, &sci.varAccess, cmd);
 
@@ -140,48 +141,48 @@ bool SCI_GetVarFromStruct(int16_t i16_varNum, VAR** p_Var)
 }
 
 //=============================================================================
-COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
+tSCI_ERROR commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize, COMMAND *pCmd)
 {
     uint8_t i = 0;
     uint32_t ui32_tmp;
     // uint8_t cmdIdx  = 0;
-    COMMAND cmd     = COMMAND_DEFAULT;
+    // COMMAND cmd     = COMMAND_DEFAULT;
 
     for (; i < ui8_stringSize; i++)
     {
 
         if (pui8_buf[i] == GETVAR_IDENTIFIER)
         {
-            cmd.e_cmdType = eCOMMAND_TYPE_GETVAR;
+            pCmd->e_cmdType = eCOMMAND_TYPE_GETVAR;
             break;
         }
         else if (pui8_buf[i] == SETVAR_IDENTIFIER)
         {
-            cmd.e_cmdType = eCOMMAND_TYPE_SETVAR;
+            pCmd->e_cmdType = eCOMMAND_TYPE_SETVAR;
             break;
         }
         else if (pui8_buf[i] == COMMAND_IDENTIFIER)
         {
-            cmd.e_cmdType = eCOMMAND_TYPE_COMMAND;
+            pCmd->e_cmdType = eCOMMAND_TYPE_COMMAND;
             break;
         }
         else if (pui8_buf[i] == UPSTREAM_IDENTIFIER)
         {
-            cmd.e_cmdType = eCOMMAND_TYPE_UPSTREAM;
+            pCmd->e_cmdType = eCOMMAND_TYPE_UPSTREAM;
             break;
         }
         else if (pui8_buf[i] == DOWNSTREAM_IDENTIFIER)
         {
-            cmd.e_cmdType = eCOMMAND_TYPE_DOWNSTREAM;
+            pCmd->e_cmdType = eCOMMAND_TYPE_DOWNSTREAM;
             break;
         }
-        
-        // TODO: Error handling when no command identifier has been received
+        else
+            return eSCI_ERROR_COMMAND_IDENTIFIER_NOT_FOUND;   
     }
 
     // No valid command identifier found (TODO: Error handling)
-    if (cmd.e_cmdType == eCOMMAND_TYPE_NONE)
-        goto terminate;
+    // if (pCmd->e_cmdType == eCOMMAND_TYPE_NONE)
+    //     goto terminate;
     
     /*******************************************************************************************
      * Variable number conversion
@@ -199,10 +200,10 @@ COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
         // Convert
         #ifdef VALUE_MODE_HEX
         if(!strToHex(p_numStr, &ui32_tmp))
-            ; // TODO: Error handling
-        cmd.i16_num = *(int16_t*)(&ui32_tmp);
+           return eSCI_ERROR_VARIABLE_NUMBER_CONVERSION_FAILED; 
+        pCmd->i16_num = *(int16_t*)(&ui32_tmp);
         #else
-        cmd.i16_num = (int16_t)(atoi((char*)p_numStr));
+        pCmd->i16_num = (int16_t)(atoi((char*)p_numStr));
         #endif
 
         free(p_numStr);
@@ -242,10 +243,10 @@ COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
             p_valStr[ui8_valueLen] = '\0';
 
             #ifdef VALUE_MODE_HEX
-            if(!strToHex(p_valStr, &cmd.valArr[ui8_numOfVals - 1].ui32_hex))
-                ; // TODO: Error handling
+            if(!strToHex(p_valStr, &pCmd->valArr[ui8_numOfVals - 1].ui32_hex))
+                return eSCI_ERROR_COMMAND_VALUE_CONVERSION_FAILED;
             #else
-            cmd.valArr[ui8_numOfVals - 1].f_float = atof((char*)p_valStr);
+            pCmd->valArr[ui8_numOfVals - 1].f_float = atof((char*)p_valStr);
             #endif
 
             free(p_valStr);
@@ -256,33 +257,32 @@ COMMAND commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize)
             ui8_valueLen = 0;
             j++;
         }
-        cmd.ui8_valArrLen = ui8_numOfVals;
+        pCmd->ui8_valArrLen = ui8_numOfVals;
     }
 
-    terminate: return cmd;
+    return eSCI_ERROR_NONE;
 }
 
 //=============================================================================
-uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
+uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE rsp)
 {
     uint8_t ui8_size    = 0;
-    
 
     // Convert variable number to ASCII
     #ifdef VALUE_MODE_HEX
-    ui8_size = (uint8_t)hexToStrWord(pui8_buf, &response.i16_num, true);
+    ui8_size = (uint8_t)hexToStrWord(pui8_buf, &rsp.i16_num, true);
     #else
-    ui8_size = ftoa(pui8_buf, (float)response.i16_num, true);
+    ui8_size = ftoa(pui8_buf, (float)rsp.i16_num, true);
     #endif
 
     // Increase Buffer index and write command type identifier
     pui8_buf += ui8_size;
-    *pui8_buf++ = cmdIdArr[response.e_cmdType];
+    *pui8_buf++ = cmdIdArr[rsp.e_cmdType];
     ui8_size++;
 
-    if (response.b_valid)
+    if (rsp.b_valid)
     {
-        switch (response.e_cmdType)
+        switch (rsp.e_cmdType)
         {
             case eCOMMAND_TYPE_GETVAR:
                 // Fill the response designator
@@ -292,9 +292,9 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
                 ui8_size += 4;
                 // Write the data value into the buffer
                 #ifdef VALUE_MODE_HEX
-                ui8_size += (uint8_t)hexToStrDword(pui8_buf, &response.val.ui32_hex, true);
+                ui8_size += (uint8_t)hexToStrDword(pui8_buf, &rsp.val.ui32_hex, true);
                 #else
-                ui8_size += ftoa(pui8_buf, response.val.f_float, true);
+                ui8_size += ftoa(pui8_buf, rsp.val.f_float, true);
                 #endif
                 break;
             
@@ -309,20 +309,20 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
                 // No response designator on every consecutive packet
                 if (sci.sciCommands.responseControl.ui8_controlBits.firstPacketNotSent)
                 {
-                    memcpy(pui8_buf, &responseDesignator[(uint8_t)response.e_cmdStatus], 3);
+                    memcpy(pui8_buf, &responseDesignator[(uint8_t)rsp.e_cmdStatus], 3);
                     pui8_buf+=3;
                     ui8_size += 3;
 
-                    if (response.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_DATA ||response.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_UPSTREAM)
+                    if (rsp.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_DATA ||rsp.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_UPSTREAM)
                     {
                         uint8_t ui8_asciiSize;
 
                         *pui8_buf++ = ';';
                         ui8_size++;
                         #ifdef VALUE_MODE_HEX
-                        ui8_asciiSize = (uint8_t)hexToStrDword(pui8_buf, &response.info.ui32_datLen, true);
+                        ui8_asciiSize = (uint8_t)hexToStrDword(pui8_buf, &rsp.info.ui32_datLen, true);
                         #else
-                        ui8_asciiSize = ftoa(pui8_buf, (float)response.info.ui32_datLen, true);
+                        ui8_asciiSize = ftoa(pui8_buf, (float)rsp.info.ui32_datLen, true);
                         #endif
                         pui8_buf += ui8_asciiSize;
                         ui8_size += ui8_asciiSize;
@@ -353,7 +353,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
     else
     {
         // We get here for example if there was no valid command identifier found
-        if (response.info.ui16_error == 0)
+        if (rsp.info.ui16_error == 0)
         {
             memcpy(pui8_buf, &responseDesignator[(uint8_t)eCOMMAND_STATUS_UNKNOWN], 3);
             pui8_buf += 3;
@@ -366,15 +366,14 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response)
             ui8_size ++;
             // Write the data value into the buffer
             #ifdef VALUE_MODE_HEX
-            ui8_size += (uint8_t)hexToStrWord(pui8_buf, &response.info.ui16_error, true);
+            ui8_size += (uint8_t)hexToStrWord(pui8_buf, &rsp.info.ui16_error, true);
             #else
-            ui8_size += ftoa(pui8_buf, (float)response.info.ui16_error, true);
+            ui8_size += ftoa(pui8_buf, (float)rsp.info.ui16_error, true);
             #endif
         }
 
         ui8_size += 3;
     }
-
 
     return ui8_size;
 }

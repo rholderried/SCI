@@ -17,11 +17,9 @@
 #define _SCICONFIG_H_
 
 /******************************************************************************
- * Defines - Not to be changed!
+ * Includes
  *****************************************************************************/
-#define EEPROM_BYTE_ADDRESSABLE      1
-#define EEPROM_WORD_ADDRESSABLE      2
-#define EEPROM_LONG_ADDRESSABLE      4
+#include "SCICommon.h"
 
 /******************************************************************************
  * Defines

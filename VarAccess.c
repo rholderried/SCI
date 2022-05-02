@@ -17,6 +17,7 @@
 #include <stdbool.h>
 #include "Variables.h"
 #include "SCIconfig.h"
+#include "SCICommon.h"
 
 /******************************************************************************
  * Global variables definitions
@@ -27,11 +28,12 @@ extern const uint8_t ui8_byteLength[];
  * Function definitions
  *****************************************************************************/
 
-bool initVarstruct(VAR_ACCESS* p_varAccess)
+tSCI_ERROR initVarstruct(VAR_ACCESS* p_varAccess)
 {
     uint16_t    ui16_currentEEVarAddress = ADDRESS_OFFET;
     uint8_t     ui8_incrementor = 0;
     uint8_t     ui8_actualEEIdx = 0;
+    tSCI_ERROR  eError;
 
     for (uint8_t i = 0; i < SIZE_OF_VAR_STRUCT; i++)
     {
@@ -39,28 +41,31 @@ bool initVarstruct(VAR_ACCESS* p_varAccess)
         {
             // Check if there is enough space in the address table
             if (ui8_actualEEIdx == MAX_NUMBER_OF_EEPROM_VARS)
-                return false;
+                return eSCI_ERROR_EEPROM_PARTITION_TABLE_NOT_SUFFICIENT;
 
             p_varAccess->eepromPartitionTable[ui8_actualEEIdx].ui8_idx = i;
             p_varAccess->eepromPartitionTable[ui8_actualEEIdx].ui16_address = ui16_currentEEVarAddress;
 
             ui8_actualEEIdx++;
             //writeEEPROMwithValueFromVarStruct(p_varAccess, i + 1);
-            readEEPROMValueIntoVarStruct(p_varAccess, i + 1);
+            eError = readEEPROMValueIntoVarStruct(p_varAccess, i + 1);
+
+            if (eError != eSCI_ERROR_NONE)
+                return eError;
 
             ui8_incrementor = ui8_byteLength[p_varAccess->p_varStruct[i].datatype] / EEPROM_ADDRESSTYPE;
             ui16_currentEEVarAddress += ui8_incrementor > 0 ? ui8_incrementor : 1;
         }
     }
 
-    return true;
+    return eSCI_ERROR_NONE;
 }
 
 //=============================================================================
-bool readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf_val)
+tSCI_ERROR readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf_val)
 {
     int16_t i16_varIdx = i16_varNum - 1;
-    bool b_success;
+    //bool b_success;
     union
     {
         uint8_t     ui8_val;
@@ -121,23 +126,27 @@ bool readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf
                 *pf_val = ret.f_val;
                 #endif
                 break;
+
+            default:
+                return eSCI_ERROR_UNKNOWN_DATATYPE;
+
         }
 
         #ifdef VALUE_MODE_HEX
         *pf_val = ret.f_val;
         #endif
 
-        b_success = true;
+        return eSCI_ERROR_NONE;
     }
-
-    return b_success;
+    else
+        return eSCI_ERROR_VAR_NUMBER_INVALID;
 }
 
 //=============================================================================
-bool writeValToVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float f_val)
+tSCI_ERROR writeValToVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float f_val)
 {
     int16_t i16_varIdx = i16_varNum - 1;
-    bool b_success;
+    //bool b_success;
 
     union
     {
@@ -202,18 +211,21 @@ bool writeValToVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float f_va
             case eDTYPE_F32:
                 *(float*)(p_varAccess->p_varStruct[i16_varIdx].val) = f_val;
                 break;
+
+            default:
+                return eSCI_ERROR_UNKNOWN_DATATYPE;
         }
 
-        b_success = true;
+        return eSCI_ERROR_NONE;
     }
-
-    return b_success;
+    else
+        return eSCI_ERROR_VAR_NUMBER_INVALID;
 }
 
 //=============================================================================
-bool readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
+tSCI_ERROR readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
 {
-    bool        successIndicator = false;
+    bool        successIndicator = true;
     uint32_t    ui32_tmp = 0;
     uint8_t     ui8_numberOfIncs = 0;
     uint16_t    ui16_eepromAddress;
@@ -241,17 +253,16 @@ bool readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
         // Look for the partition table index of the eeprom var
         ui16_eepromAddress = getEEPROMAddress(p_varAccess, i16_varNum);
 
-        successIndicator = ~(ui16_eepromAddress == EEEPROM_ADDRESS_ILLEGAL);
-
-        if (!successIndicator)
-            goto terminate;
+        if(ui16_eepromAddress == EEEPROM_ADDRESS_ILLEGAL)
+            return eSCI_ERROR_EEPROM_ADDRESS_UNKNOWN;
+;
 
         for (uint8_t i = 0; i < ui8_numberOfIncs; i++)
         {
             successIndicator &= p_varAccess->readEEPROM_cb(&ui32_tmp, ui16_eepromAddress + i);
 
             if (!successIndicator)
-                goto terminate;
+               return eSCI_ERROR_EEPROM_READOUT_FAILED;
             
             ui32_tmp <<= (i * EEPROM_ADDRESSTYPE * 8);
             u_tmp.ui32_val |= ui32_tmp;
@@ -282,16 +293,18 @@ bool readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
             case eDTYPE_F32:
                 *(float*)(p_varAccess->p_varStruct[i16_varNum - 1].val) = u_tmp.f_val;
                 break;
+            default:
+                return eSCI_ERROR_UNKNOWN_DATATYPE;
         }
     }
 
-    terminate: return successIndicator;
+    return eSCI_ERROR_NONE;
 }
 
 //=============================================================================
-bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
+tSCI_ERROR writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
 {
-    bool        successIndicator = false;
+    bool        successIndicator = true;
     uint32_t    ui32_mask = 0, ui32_tmp = 0;
     uint8_t     ui8_numberOfIncs = 0;
     uint16_t    ui16_eepromAddress;
@@ -313,10 +326,8 @@ bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varN
         // Look for the partition table index of the eeprom var
         ui16_eepromAddress = getEEPROMAddress(p_varAccess, i16_varNum);
 
-        successIndicator = ~(ui16_eepromAddress == EEEPROM_ADDRESS_ILLEGAL);
-
-        if (!successIndicator)
-            goto terminate;
+        if(ui16_eepromAddress == EEEPROM_ADDRESS_ILLEGAL)
+            return eSCI_ERROR_EEPROM_ADDRESS_UNKNOWN;
 
         // Read data from the data structure
         switch(p_varAccess->p_varStruct[i16_varNum - 1].datatype)
@@ -342,6 +353,8 @@ bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varN
             case eDTYPE_F32:
                 u_tmp.f_val = *(float*)(p_varAccess->p_varStruct[i16_varNum - 1].val);
                 break;
+            default:
+                return eSCI_ERROR_UNKNOWN_DATATYPE;
         }
 
         // Determine how many EEPROM reads have to be accomplished
@@ -354,8 +367,6 @@ bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varN
             ui32_mask |= 0xFF << ((i - 1) * 8);
         }
 
-        successIndicator = true;
-
         // Write EEPROM 
         for (uint8_t i = ui8_numberOfIncs; i > 0; i--)
         {
@@ -365,11 +376,11 @@ bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varN
             successIndicator &= p_varAccess->writeEEPROM_cb(ui32_tmp, ui16_eepromAddress + (i - 1));
 
             if (!successIndicator)
-                break;
+                return eSCI_ERROR_EEPROM_WRITE_FAILED;
         }
     }
 
-    terminate: return successIndicator;
+    return eSCI_ERROR_NONE;
 }
 
 //=============================================================================
@@ -391,13 +402,13 @@ uint16_t getEEPROMAddress(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
 }
 
 //=============================================================================
-bool getVarPtr(VAR_ACCESS* p_varAccess, VAR** p_Var, int16_t i16_varNum)
+tSCI_ERROR getVarPtr(VAR_ACCESS* p_varAccess, VAR** p_Var, int16_t i16_varNum)
 {
     if ((i16_varNum > 0 && i16_varNum))    
     {
         *p_Var = &p_varAccess->p_varStruct[i16_varNum - 1];
-        return true;
+        return eSCI_ERROR_NONE;
     }
     
-    return false;
+    return eSCI_ERROR_VAR_NUMBER_INVALID;
 }

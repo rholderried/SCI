@@ -20,16 +20,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "SCIconfig.h"
+#include "SCICommon.h"
 
 /******************************************************************************
  * defines
  *****************************************************************************/
-#define EEPROM_ADDR_BYTE      1
-#define EEPROM_ADDR_WORD      2
-#define EEPROM_ADDR_LONG      4
-
-#define EEPROM_ADDRESSTYPE_DEFAULT    EEPROM_ADDR_BYTE
-
+#define EEPROM_ADDRESSTYPE_DEFAULT    EEPROM_BYTE_ADDRESSABLE
 #ifndef EEPROM_ADDRESSTYPE
 #define EEPROM_ADDRESSTYPE EEPROM_ADDRESSTYPE_DEFAULT
 #endif
@@ -114,7 +110,7 @@ typedef struct
      *
      * @returns Success indicator.
      */
-bool initVarstruct(VAR_ACCESS* p_varAccess);
+tSCI_ERROR initVarstruct(VAR_ACCESS* p_varAccess);
 
 /** \brief Performs a variable read operation through the variable structure.
  *
@@ -122,7 +118,7 @@ bool initVarstruct(VAR_ACCESS* p_varAccess);
  * @param *pf_val       Address to the variable to which the value gets written.
  * @returns Success indicator.
  */
-bool readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf_val);
+tSCI_ERROR readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf_val);
 
 /** \brief Performs a variable write operation through the variable structure.
  *
@@ -130,26 +126,26 @@ bool readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf
  * @param f_val         Value to write.
  * @returns Success indicator.
  */
-bool writeValToVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float f_val);
+tSCI_ERROR writeValToVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float f_val);
 
 /** \brief Reads a value from the EEPROM into the Variable structure.
  *
  * @param i16_varNum    Variable structure number.
  * @returns Success indicator.
  */
-bool readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
+tSCI_ERROR readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
 /** \brief Writes the EEPROM by the value read out from the variable structure.
  *
  * @param i16_varNum    Variable structure number.
  * @returns Success indicator.
  */
-bool writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
+tSCI_ERROR writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
 
 uint16_t getEEPROMAddress(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
-bool getVarPtr(VAR_ACCESS* p_varAccess, VAR** p_Var, int16_t i16_varNum);
+tSCI_ERROR getVarPtr(VAR_ACCESS* p_varAccess, VAR** p_Var, int16_t i16_varNum);
 
 /******************************************************************************
  * Global variable declaration

@@ -31,9 +31,13 @@ extern const uint8_t ui8_byteLength[];
  * Function definitions
  *****************************************************************************/
 //=============================================================================
-RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
+tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd, RESPONSE *pRsp)
 {
-    RESPONSE rsp = RESPONSE_DEFAULT;
+    // RESPONSE rsp = RESPONSE_DEFAULT;
+    tSCI_ERROR eError = eSCI_ERROR_NONE;
+
+    pRsp->i16_num         = cmd.i16_num;
+    pRsp->e_cmdType       = cmd.e_cmdType;
 
     switch (cmd.e_cmdType)
     {
@@ -42,20 +46,19 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
             {
                 float f_val = 0.0;
 
-                rsp.i16_num     = cmd.i16_num;
-                rsp.e_cmdType   = cmd.e_cmdType;
-
                 // If there is no readEEPROM callback or this is no EEPROM var, simply skip this step
                 if (p_varAccess->p_varStruct[cmd.i16_num - 1].vartype == eVARTYPE_EEPROM)
                     // If conditions are met, EEPROM read must be successful.
-                    if (!readEEPROMValueIntoVarStruct(p_varAccess, cmd.i16_num))
+                    eError = readEEPROMValueIntoVarStruct(p_varAccess, cmd.i16_num);
+                    if (eError != eSCI_ERROR_NONE)
                         goto terminate;
 
-                if (!readValFromVarStruct(p_varAccess, cmd.i16_num, &f_val))
+                eError = readValFromVarStruct(p_varAccess, cmd.i16_num, &f_val);
+                if (eError != eSCI_ERROR_NONE)
                     goto terminate;
                 
-                rsp.val.f_float = f_val;
-                rsp.b_valid     = true;
+                pRsp->val.f_float = f_val;
+                pRsp->b_valid     = true;
                 
                 // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
                 clearResponseControl(p_inst);
@@ -66,22 +69,23 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
             {
                 float f_formerVal, newVal = 0.0;
                 //bool writeSuccessful = false;
-                
-                rsp.i16_num     = cmd.i16_num;
-                rsp.e_cmdType   = cmd.e_cmdType;
 
-                if (!readValFromVarStruct(p_varAccess, cmd.i16_num, &f_formerVal))
+                eError = readValFromVarStruct(p_varAccess, cmd.i16_num, &f_formerVal);
+
+                if (eError != eSCI_ERROR_NONE)
                     goto terminate;
 
                 // Read back actual value and write new one (write will only happen if read was successful)
-                if (!writeValToVarStruct(p_varAccess, cmd.i16_num, cmd.valArr[0].f_float))
+                eError = writeValToVarStruct(p_varAccess, cmd.i16_num, cmd.valArr[0].f_float);
+                if (eError != eSCI_ERROR_NONE)
                     goto terminate;
 
                 // If the varStruct write operation was successful, trigger an EEPROM write (if callback present and variable is of type eVARTYPE_EEPROM)
                 if (p_varAccess->p_varStruct[cmd.i16_num - 1].vartype == eVARTYPE_EEPROM)
                 {
                     // If conditions are met, write must be successful.
-                    if (!writeEEPROMwithValueFromVarStruct(p_varAccess, cmd.i16_num))
+                    eError = writeEEPROMwithValueFromVarStruct(p_varAccess, cmd.i16_num);
+                    if (eError != eSCI_ERROR_NONE)
                     {
                         // If the EEPROM write was not successful, write back the old value to the var struct to keep it in sync with the EEPROM.
                         writeValToVarStruct(p_varAccess, cmd.i16_num, f_formerVal);
@@ -96,8 +100,8 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                 readValFromVarStruct(p_varAccess, cmd.i16_num, &newVal);
 
                 // If everything happens to be allright, create the response
-                rsp.val.f_float = newVal;
-                rsp.b_valid     = true;
+                pRsp->val.f_float = newVal;
+                pRsp->b_valid     = true;
 
                 // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
                 clearResponseControl(p_inst);
@@ -123,10 +127,10 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
                         cmdStatus = p_inst->p_cmdCBStruct[cmd.i16_num - 1](&cmd.valArr[0].f_float,cmd.ui8_valArrLen, &info);
                         #endif
                     }
+                    else
 
                     // Response is getting sent independently of command success
-                    rsp.i16_num         = cmd.i16_num;
-                    rsp.e_cmdType       = cmd.e_cmdType;
+                    
                     rsp.e_cmdStatus     = cmdStatus;
                     rsp.info            = info;
 
@@ -187,7 +191,7 @@ RESPONSE executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd)
             break;
     }
 
-    terminate: return rsp;
+    terminate: return eError;
 }
 
 //=============================================================================
