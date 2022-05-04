@@ -39,4 +39,7 @@
 #define EEPROM_ADDRESSTYPE  EEPROM_WORD_ADDRESSABLE
 #define ADDRESS_OFFET       0
 
+// SCI error offset (SCI currently defines 11 errors)
+#define SCI_ERROR_OFFSET    0x100
+
 #endif // _SCICONFIG_H_

@@ -59,7 +59,7 @@ tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd
                     goto terminate;
                 
                 pRsp->val.f_float = f_val;
-                pRsp->b_valid     = true;
+                pRsp->e_cmdStatus = eCOMMAND_STATUS_SUCCESS;
                 
                 // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
                 clearResponseControl(p_inst);
@@ -102,7 +102,7 @@ tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd
 
                 // If everything happens to be allright, create the response
                 pRsp->val.f_float = newVal;
-                pRsp->b_valid     = true;
+                pRsp->e_cmdStatus = eCOMMAND_STATUS_SUCCESS;
 
                 // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
                 clearResponseControl(p_inst);
@@ -143,24 +143,18 @@ tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd
                     p_inst->responseControl.ui8_controlBits.firstPacketNotSent  = true;
                     p_inst->responseControl.ui32_dataIdx                        = 0;
                     
-                    if (cmdStatus != eCOMMAND_STATUS_ERROR && cmdStatus != eCOMMAND_STATUS_UNKNOWN)
-                    {
-                        pRsp->b_valid = true;
-
-                        p_inst->responseControl.ui8_controlBits.ongoing = 
-                            ((pRsp->e_cmdStatus == eCOMMAND_STATUS_SUCCESS_DATA) && (pRsp->info.ui32_datLen > 0));
-                        p_inst->responseControl.ui8_controlBits.upstream = 
-                            ((pRsp->e_cmdStatus == eCOMMAND_STATUS_SUCCESS_UPSTREAM) && (pRsp->info.ui32_datLen > 0));
-                    }
+                    // Set the control bits if a data transfer has been initiated
+                    p_inst->responseControl.ui8_controlBits.ongoing = 
+                        ((pRsp->e_cmdStatus == eCOMMAND_STATUS_SUCCESS_DATA) && (pRsp->info.ui32_datLen > 0));
+                    p_inst->responseControl.ui8_controlBits.upstream = 
+                        ((pRsp->e_cmdStatus == eCOMMAND_STATUS_SUCCESS_UPSTREAM) && (pRsp->info.ui32_datLen > 0));
+                    
                     // Save the response for later
                     p_inst->responseControl.rsp = *pRsp;
                     
                 }
                 else
                 {
-                    pRsp->b_valid         = true;
-                    // pRsp->i16_num         = p_inst->responseControl.rsp.i16_num;
-                    // pRsp->e_cmdType       = p_inst->responseControl.rsp.e_cmdType;
                     pRsp->e_cmdStatus     = p_inst->responseControl.rsp.e_cmdStatus;
                     pRsp->info            = p_inst->responseControl.rsp.info;
                     p_inst->responseControl.ui8_controlBits.firstPacketNotSent = false;
@@ -173,10 +167,8 @@ tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd
             // Number must match with the previously sent command
             if (p_inst->responseControl.rsp.i16_num == cmd.i16_num && p_inst->responseControl.ui8_controlBits.upstream == true)
             {
-                pRsp->b_valid         = true;
-                // pRsp->i16_num         = p_inst->responseControl.rsp.i16_num;
-                // pRsp->e_cmdType       = cmd.e_cmdType;
-                pRsp->info            = p_inst->responseControl.rsp.info;
+                pRsp->e_cmdStatus   = eCOMMAND_STATUS_SUCCESS;
+                pRsp->info          = p_inst->responseControl.rsp.info;
                 // Change the command type
                 p_inst->responseControl.rsp.e_cmdType = pRsp->e_cmdType;
             }
@@ -184,14 +176,10 @@ tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd
             // TODO: Error handling
             else
             {
-                // rsp.e_cmdType   = cmd.e_cmdType;
-                // rsp.i16_num     = cmd.i16_num;
                 eError = eSCI_ERROR_UPSTREAM_NOT_INITIATED;
                 goto terminate;
             }
             break;
-            // TODO: Error handling
-
 
         default:
             // If COMMAND_TYPE_NONE, we don't kill ongoing data transmissions

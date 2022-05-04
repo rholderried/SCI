@@ -58,7 +58,7 @@ typedef struct
 /** \brief Response structure declaration.*/
 typedef struct
 {
-    bool                b_valid;    /*!< Flags if response is valid and can be sent.*/
+    // bool                b_valid;    /*!< Flags if response is valid and can be sent.*/
     int16_t             i16_num;    /*!< ID Number. (Reflects Command ID number).*/
     union 
     {
@@ -70,7 +70,7 @@ typedef struct
     PROCESS_INFO        info;       /*!< Additional command processing info.*/
 }RESPONSE;
 
-#define RESPONSE_DEFAULT         {false, 0, {.ui32_hex = 0}, eCOMMAND_TYPE_NONE, eCOMMAND_STATUS_UNKNOWN, PROCESS_INFO_DEFAULT}
+#define RESPONSE_DEFAULT         {/*false,*/ 0, {.ui32_hex = 0}, eCOMMAND_TYPE_NONE, eCOMMAND_STATUS_UNKNOWN, PROCESS_INFO_DEFAULT}
 
 typedef struct
 {

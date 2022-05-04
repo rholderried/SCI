@@ -105,7 +105,7 @@ typedef struct
  *****************************************************************************/
 /** \brief Initialize protocol functionality.
  */
-bool SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct);
+tSCI_ERROR SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct);
 
 /** \brief Take and save the function pointers to the user-defined callbacks.
  *
@@ -147,7 +147,7 @@ void SCI_receiveData    (uint8_t ui8_data);
  * @param i16_varNum    Variable number of the desired variable.
  * @param p_Var         Pointer address to be set to the var struct variable.
  */
-bool SCI_GetVarFromStruct(int16_t i16_varNum, VAR** p_Var);
+tSCI_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR** p_Var);
 
 /** \brief Parses incoming message strings.
  *
@@ -155,7 +155,7 @@ bool SCI_GetVarFromStruct(int16_t i16_varNum, VAR** p_Var);
  * @param ui8_stringSize    Length of the message string.
  * @returns COMMAND structure defining the command type and number
  */
-COMMAND commandParser(uint8_t *pui8_buf, uint8_t ui8_stringSize);
+tSCI_ERROR commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize, COMMAND *pCmd);
 
 /** \brief Builds the response message string.
  * 

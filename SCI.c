@@ -21,6 +21,12 @@
 #include "Variables.h"
 #include "Buffer.h"
 
+
+/******************************************************************************
+ * Defines
+ *****************************************************************************/
+#define GET_SCI_ERROR_NUMBER(e) (e + SCI_ERROR_OFFSET)
+
 /******************************************************************************
  * Global variable definition
  *****************************************************************************/
@@ -96,17 +102,18 @@ void SCI_statemachine(void)
                 // Parse the command (skip STX and don't care for ETX)
                 eError = commandParser(pui8_buf, ui8_msgSize, &cmd);
 
+                // Take over command number and type
+                rsp.i16_num = cmd.i16_num;
+                rsp.e_cmdType = cmd.e_cmdType;
+
+                // Execute the command
                 if (eError == eSCI_ERROR_NONE)
                     eError = executeCmd(&sci.sciCommands, &sci.varAccess, cmd, &rsp);
 
-                // 
-                if (eError != eSCI_ERROR_NONE) 
-                {
-                    
-                }
+                // If there was an SCI error, return the error number with offset
+                if(eError != eSCI_ERROR_NONE)
+                    rsp.info.ui16_error = GET_SCI_ERROR_NUMBER((uint16_t)eError);
 
-                // TODO: Error behaviour if there is no valid response
-                // Currently, the arduino won't send any response
 
                 flushBuf(&sci.txFIFO);
                 
@@ -142,7 +149,7 @@ void SCI_statemachine(void)
 }
 
 //=============================================================================
-bool SCI_GetVarFromStruct(int16_t i16_varNum, VAR** p_Var)
+tSCI_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR** p_Var)
 {
     return getVarPtr(&sci.varAccess, p_Var, i16_varNum);
 }
@@ -287,7 +294,8 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE rsp)
     *pui8_buf++ = cmdIdArr[rsp.e_cmdType];
     ui8_size++;
 
-    if (rsp.b_valid)
+
+    if (!(rsp.e_cmdStatus == eCOMMAND_STATUS_ERROR || rsp.e_cmdStatus == eCOMMAND_STATUS_UNKNOWN))
     {
         switch (rsp.e_cmdType)
         {
