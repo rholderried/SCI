@@ -289,7 +289,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE rsp)
 
     // Convert variable number to ASCII
     #ifdef VALUE_MODE_HEX
-    ui8_size = (uint8_t)hexToStrWord(pui8_buf, &rsp.i16_num, true);
+    ui8_size = (uint8_t)hexToStrWord(pui8_buf, (uint16_t*)&rsp.i16_num, true);
     #else
     ui8_size = ftoa(pui8_buf, (float)rsp.i16_num, true);
     #endif
