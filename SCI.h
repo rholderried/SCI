@@ -117,32 +117,10 @@ typedef struct
  * Function definitions
  *****************************************************************************/
 /** \brief Returns the version struct of SCI.*/
-tSCI_VERSION Datalogger_GetVersion(void);
+tSCI_VERSION SCI_GetVersion(void);
 
 /** \brief Initialize protocol functionality.*/
 tSCI_ERROR SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct);
-
-/** \brief Take and save the function pointers to the user-defined callbacks.
- *
- * @param transmit_cb       Transmission callback function pointer.
- * @param readEEPROM_cb     EEPROM read callback function pointer.
- * @param writeEEPROM_cb    EEPROM write callback function pointer.
- */
-// void setupCallbacks(TX_CB transmit_cb, READEEPROM_CB readEEPROM_cb, WRITEEEPROM_CB writeEEPROM_cb);
-
-/** \brief Store the variable structure address and length.
- *
- * @param *p_varStruct      pointer to the variable structure.
- * @param ui8_structLen     Length of the variable structure.
- */
-// void setupVariableStructure(VAR *p_varStruct, uint8_t ui8_structLen);
-
-/** \brief Store the command structure address and length.
- *
- * @param *p_cmdStruct      pointer to the command structure.
- * @param ui8_structLen     Length of the variable structure.
- */
-// void setupCommandStructure(COMMAND_CB *p_cmdStruct, uint8_t ui8_structLen);
 
 /** \brief Protocol state machine
  *
