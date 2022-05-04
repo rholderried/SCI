@@ -36,8 +36,9 @@ tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd
     // RESPONSE rsp = RESPONSE_DEFAULT;
     tSCI_ERROR eError = eSCI_ERROR_NONE;
 
-    pRsp->i16_num         = cmd.i16_num;
-    pRsp->e_cmdType       = cmd.e_cmdType;
+    // This is done outside of this method now
+    // pRsp->i16_num         = cmd.i16_num;
+    // pRsp->e_cmdType       = cmd.e_cmdType;
 
     switch (cmd.e_cmdType)
     {
@@ -128,11 +129,15 @@ tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd
                         #endif
                     }
                     else
+                    {
+                        eError = eSCI_ERROR_COMMAND_UNKNOWN;
+                        goto terminate;
+                    }
 
                     // Response is getting sent independently of command success
                     
-                    rsp.e_cmdStatus     = cmdStatus;
-                    rsp.info            = info;
+                    pRsp->e_cmdStatus     = cmdStatus;
+                    pRsp->info            = info;
 
                     // Fill the response control struct
                     p_inst->responseControl.ui8_controlBits.firstPacketNotSent  = true;
@@ -140,24 +145,24 @@ tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd
                     
                     if (cmdStatus != eCOMMAND_STATUS_ERROR && cmdStatus != eCOMMAND_STATUS_UNKNOWN)
                     {
-                        rsp.b_valid = true;
+                        pRsp->b_valid = true;
 
                         p_inst->responseControl.ui8_controlBits.ongoing = 
-                            ((rsp.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_DATA) && (rsp.info.ui32_datLen > 0));
+                            ((pRsp->e_cmdStatus == eCOMMAND_STATUS_SUCCESS_DATA) && (pRsp->info.ui32_datLen > 0));
                         p_inst->responseControl.ui8_controlBits.upstream = 
-                            ((rsp.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_UPSTREAM) && (rsp.info.ui32_datLen > 0));
+                            ((pRsp->e_cmdStatus == eCOMMAND_STATUS_SUCCESS_UPSTREAM) && (pRsp->info.ui32_datLen > 0));
                     }
                     // Save the response for later
-                    p_inst->responseControl.rsp = rsp;
+                    p_inst->responseControl.rsp = *pRsp;
                     
                 }
                 else
                 {
-                    rsp.b_valid         = true;
-                    rsp.i16_num         = p_inst->responseControl.rsp.i16_num;
-                    rsp.e_cmdType       = p_inst->responseControl.rsp.e_cmdType;
-                    rsp.e_cmdStatus     = p_inst->responseControl.rsp.e_cmdStatus;
-                    rsp.info            = p_inst->responseControl.rsp.info;
+                    pRsp->b_valid         = true;
+                    // pRsp->i16_num         = p_inst->responseControl.rsp.i16_num;
+                    // pRsp->e_cmdType       = p_inst->responseControl.rsp.e_cmdType;
+                    pRsp->e_cmdStatus     = p_inst->responseControl.rsp.e_cmdStatus;
+                    pRsp->info            = p_inst->responseControl.rsp.info;
                     p_inst->responseControl.ui8_controlBits.firstPacketNotSent = false;
                 }
             }
@@ -168,19 +173,21 @@ tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd
             // Number must match with the previously sent command
             if (p_inst->responseControl.rsp.i16_num == cmd.i16_num && p_inst->responseControl.ui8_controlBits.upstream == true)
             {
-                rsp.b_valid         = true;
-                rsp.i16_num         = p_inst->responseControl.rsp.i16_num;
-                rsp.e_cmdType       = cmd.e_cmdType;
-                rsp.info            = p_inst->responseControl.rsp.info;
+                pRsp->b_valid         = true;
+                // pRsp->i16_num         = p_inst->responseControl.rsp.i16_num;
+                // pRsp->e_cmdType       = cmd.e_cmdType;
+                pRsp->info            = p_inst->responseControl.rsp.info;
                 // Change the command type
-                p_inst->responseControl.rsp.e_cmdType = rsp.e_cmdType;
+                p_inst->responseControl.rsp.e_cmdType = pRsp->e_cmdType;
             }
             // If conditions are not met, provide the minimal information to construct a proper answer
             // TODO: Error handling
             else
             {
-                rsp.e_cmdType   = cmd.e_cmdType;
-                rsp.i16_num     = cmd.i16_num;
+                // rsp.e_cmdType   = cmd.e_cmdType;
+                // rsp.i16_num     = cmd.i16_num;
+                eError = eSCI_ERROR_UPSTREAM_NOT_INITIATED;
+                goto terminate;
             }
             break;
             // TODO: Error handling

@@ -96,7 +96,14 @@ void SCI_statemachine(void)
                 // Parse the command (skip STX and don't care for ETX)
                 eError = commandParser(pui8_buf, ui8_msgSize, &cmd);
 
-                rsp = executeCmd(&sci.sciCommands, &sci.varAccess, cmd);
+                if (eError == eSCI_ERROR_NONE)
+                    eError = executeCmd(&sci.sciCommands, &sci.varAccess, cmd, &rsp);
+
+                // 
+                if (eError != eSCI_ERROR_NONE) 
+                {
+                    
+                }
 
                 // TODO: Error behaviour if there is no valid response
                 // Currently, the arduino won't send any response

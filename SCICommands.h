@@ -108,7 +108,7 @@ typedef struct
  * @param cmd               Holds the command information from the parsed command.
  * @returns Response structure.
  */
-RESPONSE executeCmd(SCI_COMMANDS *p_sciCommands, VAR_ACCESS *p_varAccess, COMMAND cmd); 
+tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd, RESPONSE *pRsp); 
 
 uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_maxSize);
 
