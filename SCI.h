@@ -89,7 +89,7 @@ typedef struct
     VAR_ACCESS   varAccess;     /*!< Variable structure access. */
 
     // TX_CB       txCallback = nullptr;   /*!< Transmission callback function. */ 
-}SCI;
+}tSCI;
 
 #define SCI_DEFAULT {   {SCI_VERSION_MAJOR, SCI_VERSION_MINOR, SCI_REVISION},\
                         ePROTOCOL_IDLE,\
