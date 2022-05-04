@@ -31,6 +31,9 @@
 /******************************************************************************
  * Defines
  *****************************************************************************/
+#define SCI_VERSION_MAJOR    0
+#define SCI_VERSION_MINOR    5
+#define SCI_REVISION         0
 
 #define GETVAR_IDENTIFIER       '?'
 #define SETVAR_IDENTIFIER       '!'
@@ -39,7 +42,7 @@
 #define DOWNSTREAM_IDENTIFIER   '<'
 
 /******************************************************************************
- * Type definitions
+ * Enum Type definitions
  *****************************************************************************/
 
 typedef enum
@@ -60,10 +63,19 @@ typedef enum
 }DEBUG_ACTIVATION_STATE;
 
 /******************************************************************************
- * Type definitions
+ * Structure Type definitions
  *****************************************************************************/
+/** @brief SCI version data structure */
 typedef struct
 {
+    uint8_t ui8VersionMajor;
+    uint8_t ui8VersionMinor;
+    uint8_t ui8Revision;
+}tSCI_VERSION;
+
+typedef struct
+{
+    tSCI_VERSION    sVersion;
     PROTOCOL_STATE  e_state;    /*!< Actual protocol state. */
 
     uint8_t rxBuffer[RX_PACKET_LENGTH];   /*!< RX buffer space. */ 
@@ -79,7 +91,8 @@ typedef struct
     // TX_CB       txCallback = nullptr;   /*!< Transmission callback function. */ 
 }SCI;
 
-#define SCI_DEFAULT {   ePROTOCOL_IDLE,\
+#define SCI_DEFAULT {   {SCI_VERSION_MAJOR, SCI_VERSION_MINOR, SCI_REVISION},\
+                        ePROTOCOL_IDLE,\
                         {0},{0},\
                         FIFO_BUF_DEFAULT,\
                         FIFO_BUF_DEFAULT,\
@@ -103,8 +116,10 @@ typedef struct
 /******************************************************************************
  * Function definitions
  *****************************************************************************/
-/** \brief Initialize protocol functionality.
- */
+/** \brief Returns the version struct of SCI.*/
+tSCI_VERSION Datalogger_GetVersion(void);
+
+/** \brief Initialize protocol functionality.*/
 tSCI_ERROR SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct);
 
 /** \brief Take and save the function pointers to the user-defined callbacks.
