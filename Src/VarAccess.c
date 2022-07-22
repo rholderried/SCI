@@ -392,8 +392,10 @@ uint16_t getEEPROMAddress(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
     while (ui8_idx < MAX_NUMBER_OF_EEPROM_VARS)
     {
         if ((i16_varNum - 1) == p_varAccess->eepromPartitionTable[ui8_idx].ui8_idx)
+        {
             ui16_address = p_varAccess->eepromPartitionTable[ui8_idx].ui16_address;
             break;
+        }
         
         ui8_idx++;
     }

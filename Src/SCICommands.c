@@ -49,10 +49,12 @@ tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd
 
                 // If there is no readEEPROM callback or this is no EEPROM var, simply skip this step
                 if (p_varAccess->p_varStruct[cmd.i16_num - 1].vartype == eVARTYPE_EEPROM)
+                {
                     // If conditions are met, EEPROM read must be successful.
                     eError = readEEPROMValueIntoVarStruct(p_varAccess, cmd.i16_num);
                     if (eError != eSCI_ERROR_NONE)
                         goto terminate;
+                }
 
                 eError = readValFromVarStruct(p_varAccess, cmd.i16_num, &f_val);
                 if (eError != eSCI_ERROR_NONE)
