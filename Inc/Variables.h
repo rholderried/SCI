@@ -90,7 +90,7 @@ typedef struct
 
 typedef struct
 {
-    VAR     *p_varStruct;           /*!< Remembers the address of the variable structure.*/
+    const VAR     *p_varStruct;      /*!< Remembers the address of the variable structure.*/
 
     WRITEEEPROM_CB  writeEEPROM_cb;  /*!< Gets called in case of a EEPROM variable has been writen by command.*/
     READEEPROM_CB   readEEPROM_cb;   /*!< Gets called in case of a EEPROM variable has been read by command.*/

@@ -95,7 +95,7 @@ typedef struct
 {
     RESPONSECONTROL responseControl;
 
-    COMMAND_CB *p_cmdCBStruct;      /*!< Command callback structure.*/
+    const COMMAND_CB *p_cmdCBStruct;      /*!< Command callback structure.*/
 }SCI_COMMANDS;
 
 #define SCI_COMMANDS_DEFAULT    {RESPONSECONTROL_DEFAULT, NULL}
