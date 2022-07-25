@@ -194,14 +194,12 @@ tSCI_ERROR commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize, COMMAND *pCm
         {
             pCmd->e_cmdType = eCOMMAND_TYPE_DOWNSTREAM;
             break;
-        }
-        else
-            return eSCI_ERROR_COMMAND_IDENTIFIER_NOT_FOUND;   
+        }      
     }
 
     // No valid command identifier found (TODO: Error handling)
-    // if (pCmd->e_cmdType == eCOMMAND_TYPE_NONE)
-    //     goto terminate;
+    if (pCmd->e_cmdType == eCOMMAND_TYPE_NONE)
+        return eSCI_ERROR_COMMAND_IDENTIFIER_NOT_FOUND;
     
     /*******************************************************************************************
      * Variable number conversion
