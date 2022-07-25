@@ -120,7 +120,7 @@ typedef struct
 tSCI_VERSION SCI_GetVersion(void);
 
 /** \brief Initialize protocol functionality.*/
-tSCI_ERROR SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct);
+tSCI_ERROR SCI_init(SCI_CALLBACKS callbacks, const VAR *p_varStruct, const COMMAND_CB *p_cmdStruct);
 
 /** \brief Protocol state machine
  *

@@ -46,7 +46,7 @@ tSCI_VERSION SCI_GetVersion(void)
 }
 
 //=============================================================================
-tSCI_ERROR SCI_init(SCI_CALLBACKS callbacks, VAR *p_varStruct, COMMAND_CB *p_cmdStruct)
+tSCI_ERROR SCI_init(SCI_CALLBACKS callbacks, const VAR *p_varStruct, const COMMAND_CB *p_cmdStruct)
 {
     // Initialize the callbacks
     sSci.varAccess.readEEPROM_cb                 = callbacks.readEEPROMCallback;
