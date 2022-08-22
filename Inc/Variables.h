@@ -145,7 +145,7 @@ tSCI_ERROR writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i1
 
 uint16_t getEEPROMAddress(VAR_ACCESS* p_varAccess, int16_t i16_varNum);
 
-tSCI_ERROR getVarPtr(VAR_ACCESS* p_varAccess, VAR** p_Var, int16_t i16_varNum);
+tSCI_ERROR getVar(VAR_ACCESS* p_varAccess, VAR* p_Var, int16_t i16_varNum);
 
 /******************************************************************************
  * Global variable declaration

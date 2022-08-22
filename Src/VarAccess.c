@@ -404,11 +404,11 @@ uint16_t getEEPROMAddress(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
 }
 
 //=============================================================================
-tSCI_ERROR getVarPtr(VAR_ACCESS* p_varAccess, VAR** p_Var, int16_t i16_varNum)
+tSCI_ERROR getVar(VAR_ACCESS* p_varAccess, VAR* p_Var, int16_t i16_varNum)
 {
     if ((i16_varNum > 0 && i16_varNum))    
     {
-        *p_Var = &p_varAccess->p_varStruct[i16_varNum - 1];
+        *p_Var = p_varAccess->p_varStruct[i16_varNum - 1];
         return eSCI_ERROR_NONE;
     }
     

@@ -154,9 +154,9 @@ void SCI_statemachine(void)
 }
 
 //=============================================================================
-tSCI_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR** p_Var)
+tSCI_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR* p_Var)
 {
-    return getVarPtr(&sSci.varAccess, p_Var, i16_varNum);
+    return getVar(&sSci.varAccess, p_Var, i16_varNum);
 }
 
 //=============================================================================

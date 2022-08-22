@@ -31,6 +31,7 @@
 /******************************************************************************
  * Defines
  *****************************************************************************/
+#define SCI
 #define SCI_VERSION_MAJOR    0
 #define SCI_VERSION_MINOR    5
 #define SCI_REVISION         0
@@ -140,7 +141,7 @@ void SCI_receiveData    (uint8_t ui8_data);
  * @param i16_varNum    Variable number of the desired variable.
  * @param p_Var         Pointer address to be set to the var struct variable.
  */
-tSCI_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR** p_Var);
+tSCI_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR* p_Var);
 
 /** \brief Parses incoming message strings.
  *
