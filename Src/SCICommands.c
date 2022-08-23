@@ -7,6 +7,7 @@
  * <b> History </b>
  * 	- 2022-01-13 - File creation
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
+ *  - 2022-08-23 - V0.6.0: Upstream data gets not converted into ASCII data
  *****************************************************************************/
 
 /******************************************************************************
@@ -202,15 +203,24 @@ uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_
         if (p_inst->responseControl.rsp.info.pui8_upStreamBuf == NULL)
             return 0;
 
-        while (ui8_maxSize > (ui8_currentDataSize + 1) && p_inst->responseControl.rsp.info.ui32_datLen > 0)
-        {
-            // ui8_currentDataSize += hexToStr(p_buf,(uint32_t*)&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx],2,false);
-            ui8_currentDataSize += hexToStrByte(p_buf,&p_inst->responseControl.rsp.info.pui8_upStreamBuf[p_inst->responseControl.ui32_dataIdx], false);
+        // Upstream data does not get converted into an ASCII-stream
+        // Determine the actual packet length
+        ui8_maxSize = p_inst->responseControl.rsp.info.ui32_datLen < ui8_maxSize ? p_inst->responseControl.rsp.info.ui32_datLen : ui8_maxSize;
+        memcpy(p_buf, &p_inst->responseControl.rsp.info.pui8_upStreamBuf[p_inst->responseControl.ui32_dataIdx], ui8_maxSize);
 
-            p_inst->responseControl.rsp.info.ui32_datLen--;
-            p_inst->responseControl.ui32_dataIdx++;
-            p_buf += 2;
-        }
+        p_inst->responseControl.rsp.info.ui32_datLen -= ui8_maxSize;
+        p_inst->responseControl.ui32_dataIdx += ui8_maxSize;
+        ui8_currentDataSize += ui8_maxSize;
+
+        // while (ui8_maxSize > (ui8_currentDataSize + 1) && p_inst->responseControl.rsp.info.ui32_datLen > 0)
+        // {
+        //     // ui8_currentDataSize += hexToStr(p_buf,(uint32_t*)&p_inst->responseControl.rsp.info.pui8_buf[p_inst->responseControl.ui32_byteIdx],2,false);
+        //     ui8_currentDataSize += hexToStrByte(p_buf,&p_inst->responseControl.rsp.info.pui8_upStreamBuf[p_inst->responseControl.ui32_dataIdx], false);
+
+        //     p_inst->responseControl.rsp.info.ui32_datLen--;
+        //     p_inst->responseControl.ui32_dataIdx++;
+        //     p_buf += 2;
+        // }
     }
     else if (p_inst->responseControl.rsp.e_cmdType == eCOMMAND_TYPE_COMMAND)
     {

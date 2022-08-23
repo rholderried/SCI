@@ -361,7 +361,10 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE rsp)
                 break;
             
             case eCOMMAND_TYPE_UPSTREAM:
-                ui8_size += fillBufferWithValues(&sSci.sciCommands, pui8_buf, TX_PACKET_LENGTH - ui8_size);
+                // upstream is sent without command ID overhead
+                pui8_buf -= ui8_size;
+                ui8_size = 0;
+                ui8_size += fillBufferWithValues(&sSci.sciCommands, pui8_buf, TX_PACKET_LENGTH);
                 break;
 
             default:

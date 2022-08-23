@@ -33,7 +33,7 @@
  *****************************************************************************/
 #define SCI
 #define SCI_VERSION_MAJOR    0
-#define SCI_VERSION_MINOR    5
+#define SCI_VERSION_MINOR    6
 #define SCI_REVISION         0
 
 #define GETVAR_IDENTIFIER       '?'
