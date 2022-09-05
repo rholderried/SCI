@@ -33,7 +33,7 @@ tSCI_ERROR initVarstruct(VAR_ACCESS* p_varAccess)
     uint16_t    ui16_currentEEVarAddress = ADDRESS_OFFET;
     uint8_t     ui8_incrementor = 0;
     uint8_t     ui8_actualEEIdx = 0;
-    tSCI_ERROR  eError;
+    tSCI_ERROR  eError = eSCI_ERROR_NONE;
 
     for (uint8_t i = 0; i < SIZE_OF_VAR_STRUCT; i++)
     {
@@ -50,15 +50,17 @@ tSCI_ERROR initVarstruct(VAR_ACCESS* p_varAccess)
             //writeEEPROMwithValueFromVarStruct(p_varAccess, i + 1);
             eError = readEEPROMValueIntoVarStruct(p_varAccess, i + 1);
 
-            if (eError != eSCI_ERROR_NONE)
-                return eError;
+            // We ignore EEPROM read errors and keep the default value of the RAM variable
+            // To enable write Access, we establish the EEPROM partition table anyways.
+            // if (eError != eSCI_ERROR_NONE)
+            //     return eError;
 
             ui8_incrementor = ui8_byteLength[p_varAccess->p_varStruct[i].datatype] / EEPROM_ADDRESSTYPE;
             ui16_currentEEVarAddress += ui8_incrementor > 0 ? ui8_incrementor : 1;
         }
     }
 
-    return eSCI_ERROR_NONE;
+    return eError;
 }
 
 //=============================================================================
