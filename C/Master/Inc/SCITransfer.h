@@ -19,14 +19,13 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "SCIMasterConfig.h"
-#include "SCICommon.h"
+#include "SCITransferCommon.h"
 
 /******************************************************************************
  * Defines
  *****************************************************************************/
 
-#define MAX_NUM_REQUEST_VALUES  10
-#define MAX_NUM_RESPONSE_VALUES 10
+
 
 /******************************************************************************
  * Type definitions
@@ -36,51 +35,18 @@ typedef enum
     eSCI_REQUEST_ERROR_NONE = 0,
 }teREQUEST_ERROR;
 
-typedef union
-{
-    float           f_float;
-    uint32_t        ui32_hex;
-}tuREQUESTVALUE;
+// /** \brief REQUEST structure declaration.*/
+// typedef struct
+// {
+//     int16_t         i16Num;                            /*!< ID Number.*/
+//     teREQUEST_TYPE  eReqType;                          /*!< REQUEST Type.*/
+//     tuREQUESTVALUE  *uValArr;                          /*!< Pointer to the value array.*/
+//     uint8_t         ui8ValArrLen;                      /*!< Length of the value Array.*/
+// }tsREQUEST;
 
-typedef tuREQUESTVALUE tuRESPONSEVALUE;
-
-
-/** \brief Request type enumeration.*/
-typedef enum 
-{
-    eREQUEST_TYPE_NONE          = 0,
-    eREQUEST_TYPE_GETVAR        = 1,
-    eREQUEST_TYPE_SETVAR        = 2,
-    eREQUEST_TYPE_COMMAND       = 3,
-    eREQUEST_TYPE_UPSTREAM      = 4,
-    eREQUEST_TYPE_DOWNSTREAM    = 5
-}teREQUEST_TYPE;
+// #define tsREQUEST_DEFAULTS         {0, 0, NULL, eREQUEST_TYPE_NONE}
 
 
-
-/** \brief REQUEST structure declaration.*/
-typedef struct
-{
-    int16_t         i16Num;                            /*!< ID Number.*/
-    teREQUEST_TYPE  eReqType;                          /*!< REQUEST Type.*/
-    tuREQUESTVALUE  *uValArr;                          /*!< Pointer to the value array.*/
-    uint8_t         ui8ValArrLen;                      /*!< Length of the value Array.*/
-}tsREQUEST;
-
-#define tsREQUEST_DEFAULTS         {0, 0, NULL, eREQUEST_TYPE_NONE}
-
-/** \brief Response structure declaration.*/
-typedef struct
-{
-    int16_t                 i16Num;                             /*!< ID Number. (Reflects REQUEST ID number).*/
-    teREQUEST_TYPE          eReqType;                           /*!< Response type inherited from REQUEST type.*/
-    teREQUEST_ACKNOWLEDGE   eReqAck;                            /*!< Acknowledge returned by the REQUEST callback.*/
-    uint8_t                 ui8ResponseDataLength;              /*!< Data length within actual response */
-    tuRESPONSEVALUE         uValArr[MAX_NUM_RESPONSE_VALUES];   /*!< Pointer to the value array.*/                           /*!< Response value.*/
-    uint8_t                 *pui8Raw;                           /*!< Raw data of the response dataframe */
-    uint16_t                ui16ErrNum;                         /*!< Returned error number */
-    uint32_t                ui32DataLength;                     /*!< Whole length of the data to follow */
-}tsRESPONSE;
 
 #define tsRESPONSE_DEFAULTS         {0, eREQUEST_TYPE_NONE, eREQUEST_ACK_STATUS_UNKNOWN, 0, {{.ui32_hex = 0}}, NULL, 0, 0}
 

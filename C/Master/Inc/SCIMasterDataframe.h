@@ -1,16 +1,17 @@
 /**************************************************************************//**
- * \file SCIDataframe.h
+ * \file SCIMasterDataframe.h
  * \author Roman Holderried
  *
  * \brief SCI Dataframe parser declarations and definitions.
  *
  * <b> History </b>
- * 	- 2022-11-21 - File creation -
+ * 	- 2022-11-21 - File creation
+ *  - 2022-12-11 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
 
-#ifndef _SCIDATAFRAME_H_
-#define _SCIDATAFRAME_H_
+#ifndef _SCIMASTERDATAFRAME_H_
+#define _SCIMASTERDATAFRAME_H_
 
 /******************************************************************************
  * Includes
@@ -24,12 +25,6 @@
 /******************************************************************************
  * Defines
  *****************************************************************************/
-
-#define GETVAR_IDENTIFIER       '?'
-#define SETVAR_IDENTIFIER       '!'
-#define COMMAND_IDENTIFIER      ':'
-#define UPSTREAM_IDENTIFIER     '>'
-#define DOWNSTREAM_IDENTIFIER   '<'
 
 #define REQUEST_ACKNOWLEDGE_NOT_FOUND   -1
 
@@ -49,7 +44,7 @@
  * 
  * @returns Error indicator
 */
-teSCI_ERROR SCIMasterRequestBuilder(uint8_t *pui8Buf, uint8_t *pui8Size, tsREQUEST sReq);
+teSCI_MASTER_ERROR SCIMasterRequestBuilder(uint8_t *pui8Buf, uint8_t *pui8Size, tsREQUEST sReq);
 
 /** \brief Parses the SCI response from the device (transfer).
  * 
@@ -59,7 +54,7 @@ teSCI_ERROR SCIMasterRequestBuilder(uint8_t *pui8Buf, uint8_t *pui8Size, tsREQUE
  * 
  * @returns Error indicator
 */
-teSCI_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8MsgSize, tsRESPONSE *pRsp);
+teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8MsgSize, tsRESPONSE *pRsp);
 
 /** \brief Parses the SCI response from the device (stream).
  * 
@@ -69,7 +64,7 @@ teSCI_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8MsgSize, tsRESP
  * 
  * @returns Error indicator
 */
-teSCI_ERROR SCIMasterStreamParser(uint8_t* pui8Buf, uint8_t ui8MsgSize, tsRESPONSE *pRsp);
+teSCI_MASTER_ERROR SCIMasterStreamParser(uint8_t* pui8Buf, uint8_t ui8MsgSize, tsRESPONSE *pRsp);
 
 /** \brief Internal function to check the acknowledge string of the messages
  * 
@@ -84,4 +79,4 @@ int16_t _CheckAcknowledge (uint8_t *pui8Buf, uint8_t ui8BytesToGo);
 
 
 
-#endif //_SCIDATAFRAME_H_
+#endif //_SCIMASTERDATAFRAME_H_

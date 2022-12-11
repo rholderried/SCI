@@ -8,8 +8,8 @@
  * 	- 2022-11-17 - File copied from SCI
  *****************************************************************************/
 
-#ifndef SCICOMMON_H_
-#define SCICOMMON_H_
+#ifndef _SCICOMMON_H_
+#define _SCICOMMON_H_
 /******************************************************************************
  * Includes
  *****************************************************************************/
@@ -18,20 +18,21 @@
  * defines
  *****************************************************************************/
 #define SCI
+
 #define SCI_VERSION_MAJOR    0
 #define SCI_VERSION_MINOR    6
 #define SCI_REVISION         0
-
-#define GETVAR_IDENTIFIER       '?'
-#define SETVAR_IDENTIFIER       '!'
-#define COMMAND_IDENTIFIER      ':'
-#define UPSTREAM_IDENTIFIER     '>'
-#define DOWNSTREAM_IDENTIFIER   '<'
 
 #define EEPROM_BYTE_ADDRESSABLE      1
 #define EEPROM_WORD_ADDRESSABLE      2
 #define EEPROM_LONG_ADDRESSABLE      4
 
+#define UNKNOWN_IDENTIFIER      '#'
+#define GETVAR_IDENTIFIER       '?'
+#define SETVAR_IDENTIFIER       '!'
+#define COMMAND_IDENTIFIER      ':'
+#define UPSTREAM_IDENTIFIER     '>'
+#define DOWNSTREAM_IDENTIFIER   '<'
 /******************************************************************************
  * Type definitions
  *****************************************************************************/
@@ -66,26 +67,7 @@ typedef enum
     eSCI_ERROR_COMMAND_VALUE_CONVERSION_FAILED,
     eSCI_ERROR_COMMAND_UNKNOWN,
     eSCI_ERROR_UPSTREAM_NOT_INITIATED
-}tSCI_SLAVE_ERROR;
-
-
-/** \brief Request acknowledge enumeration */
-typedef enum
-{
-    eREQUEST_ACK_STATUS_SUCCESS             = 0,
-    eREQUEST_ACK_STATUS_SUCCESS_DATA        = 1,
-    eREQUEST_ACK_STATUS_SUCCESS_UPSTREAM    = 2,
-    eREQUEST_ACK_STATUS_ERROR               = 3,
-    eREQUEST_ACK_STATUS_UNKNOWN             = 4
-}teREQUEST_ACKNOWLEDGE;
-
-/** \brief Return value of the Transfer callbacks*/
-typedef enum
-{
-    eTRANSFER_ACK_SUCCESS = 0,
-    eTRANSFER_ACK_REPEAT_REQUEST,
-    eTRANSFER_ACK_ABORT
-}teTRANSFER_ACK;
+}teSCI_SLAVE_ERROR;
 
 /** @brief SCI version data structure */
 typedef struct
@@ -93,9 +75,8 @@ typedef struct
     uint8_t ui8VersionMajor;
     uint8_t ui8VersionMinor;
     uint8_t ui8Revision;
-}tSCI_VERSION;
+}tsSCI_VERSION;
 
+#define tsSCI_VERSION_VALUE {SCI_VERSION_MAJOR, SCI_VERSION_MINOR, SCI_REVISION}
 
-
-
-#endif //SCICOMMON_H_
+#endif //_SCICOMMON_H_

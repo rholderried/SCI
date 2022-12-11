@@ -26,7 +26,7 @@
 #include "Variables.h"
 #include "Buffer.h"
 #include "CommandStucture.h"
-#include "DataLink.h"
+#include "SCIDataLink.h"
 #include "SCIconfig.h"
 
 /******************************************************************************
@@ -62,30 +62,30 @@ typedef enum
 
 typedef struct
 {
-    tSCI_VERSION    sVersion;
+    tsSCI_VERSION   sVersion;
     PROTOCOL_STATE  e_state;    /*!< Actual protocol state. */
 
-    uint8_t rxBuffer[RX_PACKET_LENGTH];   /*!< RX buffer space. */ 
-    uint8_t txBuffer[TX_PACKET_LENGTH];   /*!< TX buffer space. */ 
+    uint8_t ui8RxBuffer[RX_PACKET_LENGTH];   /*!< RX buffer space. */ 
+    uint8_t ui8TxBuffer[TX_PACKET_LENGTH];   /*!< TX buffer space. */ 
 
-    FIFO_BUF rxFIFO;  /*!< RX buffer management. */ 
-    FIFO_BUF txFIFO;  /*!< TX buffer management. */
+    tsFIFO_BUF      sRxFIFO;  /*!< RX buffer management. */ 
+    tsFIFO_BUF      sTxFIFO;  /*!< TX buffer management. */
 
-    DATALINK     datalink;
-    SCI_COMMANDS sciCommands;   /*!< Commands variable structure. */
-    VAR_ACCESS   varAccess;     /*!< Variable structure access. */
+    tsDATALINK      sDatalink;
+    SCI_COMMANDS    sciCommands;   /*!< Commands variable structure. */
+    VAR_ACCESS      varAccess;     /*!< Variable structure access. */
 
     // TX_CB       txCallback = nullptr;   /*!< Transmission callback function. */ 
-}tSCI;
+}tsSCI_SLAVE;
 
-#define SCI_DEFAULT {   {SCI_VERSION_MAJOR, SCI_VERSION_MINOR, SCI_REVISION},\
-                        ePROTOCOL_IDLE,\
-                        {0},{0},\
-                        FIFO_BUF_DEFAULT,\
-                        FIFO_BUF_DEFAULT,\
-                        DATALINK_DEFAULT,\
-                        SCI_COMMANDS_DEFAULT,\
-                        VAR_ACCESS_DEFAULT}
+#define tsSCI_SLAVE_DEFAULTS {  {SCI_VERSION_MAJOR, SCI_VERSION_MINOR, SCI_REVISION},\
+                                ePROTOCOL_IDLE,\
+                                {0},{0},\
+                                tsFIFO_BUF_DEFAULTS,\
+                                tsFIFO_BUF_DEFAULTS,\
+                                tsDATALINK_DEFAULTS,\
+                                SCI_COMMANDS_DEFAULT,\
+                                VAR_ACCESS_DEFAULT}
 
 typedef struct
 {
@@ -104,10 +104,10 @@ typedef struct
  * Function definitions
  *****************************************************************************/
 /** \brief Returns the version struct of SCI.*/
-tSCI_VERSION SCI_GetVersion(void);
+tsSCI_VERSION SCI_GetVersion(void);
 
 /** \brief Initialize protocol functionality.*/
-tSCI_ERROR SCI_init(SCI_CALLBACKS callbacks, const VAR *p_varStruct, const COMMAND_CB *p_cmdStruct);
+teSCI_SLAVE_ERROR SCI_init(SCI_CALLBACKS callbacks, const VAR *p_varStruct, const COMMAND_CB *p_cmdStruct);
 
 /** \brief Protocol state machine
  *
@@ -127,24 +127,5 @@ void SCI_receiveData    (uint8_t ui8_data);
  * @param i16_varNum    Variable number of the desired variable.
  * @param p_Var         Pointer address to be set to the var struct variable.
  */
-tSCI_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR* p_Var);
-
-/** \brief Parses incoming message strings.
- *
- * @param *pui8_buf         Pointer to the buffer that holds the message.
- * @param ui8_stringSize    Length of the message string.
- * @returns COMMAND structure defining the command type and number
- */
-tSCI_ERROR commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize, COMMAND *pCmd);
-
-/** \brief Builds the response message string.
- * 
- * Takes the output from the command evaluation (RESPONSE type) and generates
- * an output message string from the data.
- * 
- * @param *pui8_buf     Pointer to the buffer where the string is going to be stored.
- * @param response      Structure holding the response information.
- * @returns size of the generated message string.
- */
-uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response);
+teSCI_SLAVE_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR* p_Var);
 #endif //_SCI_SLAVE_H_

@@ -60,7 +60,7 @@ void SCIMasterInit (tsSCI_MASTER_CALLBACKS sCallbacks)
 //=============================================================================
 void SCIMasterSM (void)
 {
-    teSCI_ERROR eError = eSCI_ERROR_NONE;
+    teSCI_MASTER_ERROR eError = eSCI_ERROR_NONE;
 
     switch (sSciMaster.eProtocolState)
     {

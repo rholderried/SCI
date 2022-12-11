@@ -17,7 +17,7 @@
 #include <stdlib.h>
 
 #include "SCICommon.h"
-#include "SCIDataframe.h"
+#include "SCIMasterDataframe.h"
 #include "SCITransfer.h"
 #include "Helpers.h"
 
@@ -33,7 +33,7 @@ static const uint8_t cmdIdArr[6] = {'#', '?', '!', ':', '>', '<'};
  * Function declarations
  *****************************************************************************/
 
-teSCI_ERROR SCIMasterRequestBuilder(uint8_t *pui8Buf, uint8_t *pui8Size, tsREQUEST sReq)
+teSCI_MASTER_ERROR SCIMasterRequestBuilder(uint8_t *pui8Buf, uint8_t *pui8Size, tsREQUEST sReq)
 {
     uint8_t ui8AsciiSize;
     uint8_t ui8DatBuf[30]   = {0};
@@ -93,7 +93,7 @@ teSCI_ERROR SCIMasterRequestBuilder(uint8_t *pui8Buf, uint8_t *pui8Size, tsREQUE
 }
 
 //=============================================================================
-teSCI_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8DataframeLen, tsRESPONSE *psRsp)
+teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8DataframeLen, tsRESPONSE *psRsp)
 {
     uint8_t i = 0;
     bool bAckPresent = false;
@@ -317,7 +317,7 @@ teSCI_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8DataframeLen, t
 }
 
 //=============================================================================
-teSCI_ERROR SCIMasterStreamParser (uint8_t* pui8Buf, uint8_t ui8DataframeLen, tsRESPONSE *psRsp)
+teSCI_MASTER_ERROR SCIMasterStreamParser (uint8_t* pui8Buf, uint8_t ui8DataframeLen, tsRESPONSE *psRsp)
 {
     psRsp->eReqType = eREQUEST_TYPE_UPSTREAM;
     psRsp->ui8ResponseDataLength = ui8DataframeLen;

@@ -1,5 +1,5 @@
 /**************************************************************************//**
- * \file SCI.c
+ * \file SCISlave.c
  * \author Roman Holderried
  *
  * \brief Definitions for the SerialProtocol module.
@@ -7,13 +7,14 @@
  * <b> History </b>
  * 	- 2022-01-13 - File creation
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
+ *  - 2022-12-11 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "SCI.h"
+#include "SCISlave.h"
 #include "SCICommands.h"
 #include "SCIconfig.h"
 #include "CommandStucture.h"
@@ -30,7 +31,7 @@
 /******************************************************************************
  * Global variable definition
  *****************************************************************************/
-static tSCI sSci = SCI_DEFAULT;
+static tsSCI_SLAVE sSciSlave = tsSCI_SLAVE_DEFAULTS;
 // Note: The idizes correspond to the values of the COMMAND_CB_STATUS enum values!
 static const uint8_t responseDesignator [5][3] = {"ACK", "DAT", "UPS", "ERR", "NAK"};
 static const uint8_t cmdIdArr[6] = {'#', '?', '!', ':', '>', '<'};
@@ -40,38 +41,38 @@ const uint8_t ui8_byteLength[7] = {1,1,2,2,4,4,4};
  * Function definitions
  *****************************************************************************/
 //===================================================================================
-tSCI_VERSION SCI_GetVersion(void)
+tsSCI_VERSION SCI_GetVersion(void)
 {
-    return sSci.sVersion;
+    return sSciSlave.sVersion;
 }
 
 //=============================================================================
-tSCI_ERROR SCI_init(SCI_CALLBACKS callbacks, const VAR *p_varStruct, const COMMAND_CB *p_cmdStruct)
+teSCI_SLAVE_ERROR SCI_init(SCI_CALLBACKS callbacks, const VAR *p_varStruct, const COMMAND_CB *p_cmdStruct)
 {
     // Initialize the callbacks
-    sSci.varAccess.readEEPROM_cb                 = callbacks.readEEPROMCallback;
-    sSci.varAccess.writeEEPROM_cb                = callbacks.writeEEPROMCallback;
-    sSci.datalink.txBlockingCallback             = callbacks.transmitBlockingCallback;
-    sSci.datalink.txNonBlockingCallback          = callbacks.transmitNonBlockingCallback;
-    sSci.datalink.txGetBusyStateCallback         = callbacks.getTxBusyStateCallback;
+    sSciSlave.varAccess.readEEPROM_cb                 = callbacks.readEEPROMCallback;
+    sSciSlave.varAccess.writeEEPROM_cb                = callbacks.writeEEPROMCallback;
+    sSciSlave.sDatalink.txBlockingCallback             = callbacks.transmitBlockingCallback;
+    sSciSlave.sDatalink.txNonBlockingCallback          = callbacks.transmitNonBlockingCallback;
+    sSciSlave.sDatalink.txGetBusyStateCallback         = callbacks.getTxBusyStateCallback;
 
     // Hand over the pointers to the var and cmd structs
-    sSci.varAccess.p_varStruct       = p_varStruct;
-    sSci.sciCommands.p_cmdCBStruct   = p_cmdStruct;
+    sSciSlave.varAccess.p_varStruct       = p_varStruct;
+    sSciSlave.sciCommands.p_cmdCBStruct   = p_cmdStruct;
 
     // Configure data structures
-    fifoBufInit(&sSci.rxFIFO, sSci.rxBuffer, RX_PACKET_LENGTH);
-    fifoBufInit(&sSci.txFIFO, sSci.txBuffer, TX_PACKET_LENGTH);
+    fifoBufInit(&sSciSlave.sRxFIFO, sSciSlave.ui8RxBuffer, RX_PACKET_LENGTH);
+    fifoBufInit(&sSciSlave.sTxFIFO, sSciSlave.ui8TxBuffer, TX_PACKET_LENGTH);
 
     // Initialize the variable structure
-    return (initVarstruct(&sSci.varAccess));
+    return (initVarstruct(&sSciSlave.varAccess));
 }
 
 //=============================================================================
 void SCI_receiveData(uint8_t ui8_data)
 {
     // Call the lower level datalink level functionality
-    receive(&sSci.datalink, &sSci.rxFIFO, ui8_data);
+    receive(&sSciSlave.sDatalink, &sSciSlave.sRxFIFO, ui8_data);
 }
 
 
@@ -79,15 +80,15 @@ void SCI_receiveData(uint8_t ui8_data)
 void SCI_statemachine(void)
 {
     // Check the lower level datalink states and set the protocol state accordingly
-    if (sSci.e_state > ePROTOCOL_ERROR)
+    if (sSciSlave.e_state > ePROTOCOL_ERROR)
     {
-        if (sSci.e_state < ePROTOCOL_EVALUATING)
-            sSci.e_state = (PROTOCOL_STATE)getDatalinkReceiveState(&sSci.datalink);
+        if (sSciSlave.e_state < ePROTOCOL_EVALUATING)
+            sSciSlave.e_state = (PROTOCOL_STATE)getDatalinkReceiveState(&sSciSlave.sDatalink);
         // else
-        //     sSci.e_state = sSci.datalink.tState;
+        //     sSciSlave.e_state = sSciSlave.datalink.tState;
     }
 
-    switch(sSci.e_state)
+    switch(sSciSlave.e_state)
     {
         case ePROTOCOL_IDLE:
             break;
@@ -98,11 +99,11 @@ void SCI_statemachine(void)
                 uint8_t *   pui8_buf;
                 COMMAND     cmd = COMMAND_DEFAULT;
                 RESPONSE    rsp = RESPONSE_DEFAULT; 
-                uint8_t     ui8_msgSize = readBuf(&sSci.rxFIFO, &pui8_buf);
-                tSCI_ERROR  eError = eSCI_ERROR_NONE;
+                uint8_t     ui8_msgSize = readBuf(&sSciSlave.sRxFIFO, &pui8_buf);
+                teSCI_SLAVE_ERROR  eError = eSCI_ERROR_NONE;
 
                 // Clear Datalink State
-                acknowledgeRx(&sSci.datalink);
+                acknowledgeRx(&sSciSlave.sDatalink);
 
                 // Parse the command (skip STX and don't care for ETX)
                 eError = commandParser(pui8_buf, ui8_msgSize, &cmd);
@@ -113,37 +114,37 @@ void SCI_statemachine(void)
 
                 // Execute the command
                 if (eError == eSCI_ERROR_NONE)
-                    eError = executeCmd(&sSci.sciCommands, &sSci.varAccess, cmd, &rsp);
+                    eError = executeCmd(&sSciSlave.sciCommands, &sSciSlave.varAccess, cmd, &rsp);
 
                 // If there was an SCI error, return the error number with offset
                 if(eError != eSCI_ERROR_NONE)
                     rsp.info.ui16_error = GET_SCI_ERROR_NUMBER((uint16_t)eError);
 
 
-                flushBuf(&sSci.txFIFO);
+                flushBuf(&sSciSlave.sTxFIFO);
                 
                 // "Put" the date into the tx buffer
-                pui8_buf = sSci.txBuffer;
-                increaseBufIdx(&sSci.txFIFO, responseBuilder(pui8_buf, rsp));
+                pui8_buf = sSciSlave.ui8TxBuffer;
+                increaseBufIdx(&sSciSlave.sTxFIFO, responseBuilder(pui8_buf, rsp));
                 // TODO: Error handling -> Message too long
 
-                if (transmit(&sSci.datalink, &sSci.txFIFO))
-                    sSci.e_state = ePROTOCOL_SENDING;
+                if (transmit(&sSciSlave.sDatalink, &sSciSlave.sTxFIFO))
+                    sSciSlave.e_state = ePROTOCOL_SENDING;
                 // TODO: Error handling?
                 else 
-                    sSci.e_state = ePROTOCOL_IDLE;  
+                    sSciSlave.e_state = ePROTOCOL_IDLE;  
             }
     
             break;
 
         case ePROTOCOL_SENDING:
 
-            transmitStateMachine(&sSci.datalink);
+            transmitStateMachine(&sSciSlave.sDatalink);
             
-            if (getDatalinkTransmitState(&sSci.datalink) == eDATALINK_TSTATE_READY)
+            if (getDatalinkTransmitState(&sSciSlave.sDatalink) == eDATALINK_TSTATE_READY)
             {
-                acknowledgeTx(&sSci.datalink);
-                sSci.e_state = ePROTOCOL_IDLE;
+                acknowledgeTx(&sSciSlave.sDatalink);
+                sSciSlave.e_state = ePROTOCOL_IDLE;
             }
             
             break;
@@ -154,13 +155,13 @@ void SCI_statemachine(void)
 }
 
 //=============================================================================
-tSCI_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR* p_Var)
+teSCI_SLAVE_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR* p_Var)
 {
-    return getVar(&sSci.varAccess, p_Var, i16_varNum);
+    return getVar(&sSciSlave.varAccess, p_Var, i16_varNum);
 }
 
 //=============================================================================
-tSCI_ERROR commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize, COMMAND *pCmd)
+teSCI_SLAVE_ERROR commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize, COMMAND *pCmd)
 {
     uint8_t i = 0;
     uint32_t ui32_tmp;
@@ -325,7 +326,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE rsp)
 
             case eCOMMAND_TYPE_COMMAND:
                 // No response designator on every consecutive packet
-                if (sSci.sciCommands.responseControl.ui8_controlBits.firstPacketNotSent)
+                if (sSciSlave.sciCommands.responseControl.ui8_controlBits.firstPacketNotSent)
                 {
                     memcpy(pui8_buf, &responseDesignator[(uint8_t)rsp.e_cmdStatus], 3);
                     pui8_buf+=3;
@@ -348,14 +349,14 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE rsp)
                 }
 
                 // Fill the rest of the packet with data
-                if (sSci.sciCommands.responseControl.ui8_controlBits.ongoing)
+                if (sSciSlave.sciCommands.responseControl.ui8_controlBits.ongoing)
                 {
-                    if(sSci.sciCommands.responseControl.ui8_controlBits.firstPacketNotSent)
+                    if(sSciSlave.sciCommands.responseControl.ui8_controlBits.firstPacketNotSent)
                     {
                         *pui8_buf++ = ';';
                         ui8_size++;
                     }
-                    ui8_size += fillBufferWithValues(&sSci.sciCommands, pui8_buf, TX_PACKET_LENGTH - ui8_size);
+                    ui8_size += fillBufferWithValues(&sSciSlave.sciCommands, pui8_buf, TX_PACKET_LENGTH - ui8_size);
                 }
 
                 break;
@@ -364,7 +365,7 @@ uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE rsp)
                 // upstream is sent without command ID overhead
                 pui8_buf -= ui8_size;
                 ui8_size = 0;
-                ui8_size += fillBufferWithValues(&sSci.sciCommands, pui8_buf, TX_PACKET_LENGTH);
+                ui8_size += fillBufferWithValues(&sSciSlave.sciCommands, pui8_buf, TX_PACKET_LENGTH);
                 break;
 
             default:

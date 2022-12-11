@@ -42,4 +42,8 @@
 // SCI error offset (SCI currently defines 11 errors)
 #define SCI_ERROR_OFFSET    0x100
 
+// Number of request and response values
+#define MAX_NUM_REQUEST_VALUES  10
+#define MAX_NUM_RESPONSE_VALUES 10
+
 #endif // _SCICONFIG_H_

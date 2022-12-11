@@ -19,50 +19,31 @@
 #include <stddef.h>
 #include "SCIconfig.h"
 #include "Variables.h"
+#include "SCITransferCommon.h"
 
 /******************************************************************************
  * Type definitions
  *****************************************************************************/
-typedef enum
-{
-    eCOMMAND_STATUS_SUCCESS             = 0,
-    eCOMMAND_STATUS_SUCCESS_DATA        = 1,
-    eCOMMAND_STATUS_SUCCESS_UPSTREAM    = 2,
-    eCOMMAND_STATUS_ERROR               = 3,
-    eCOMMAND_STATUS_UNKNOWN             = 4
-}COMMAND_CB_STATUS;
-
-typedef struct
-{
-    union
-    {
-        struct
-        {
-            uint8_t dataBufDynamic      : 1;
-            uint8_t upstreamBufDynamic  : 1;
-            uint8_t reserved            : 6;
-        }ui8_infoFlagBits;
-
-        uint8_t ui8_infoFlagByte;
-    };
-    uint8_t  *pui8_upStreamBuf;
-    uint32_t *pui32_dataBuf;
-    uint32_t ui32_datLen;
-    uint16_t ui16_error;
-}PROCESS_INFO;
-
-#define PROCESS_INFO_DEFAULT {{.ui8_infoFlagByte = 0}, NULL, NULL, 0, 0}
+// typedef enum
+// {
+//     eCOMMAND_STATUS_SUCCESS             = 0,
+//     eCOMMAND_STATUS_SUCCESS_DATA        = 1,
+//     eCOMMAND_STATUS_SUCCESS_UPSTREAM    = 2,
+//     eCOMMAND_STATUS_ERROR               = 3,
+//     eCOMMAND_STATUS_UNKNOWN             = 4
+// }COMMAND_CB_STATUS;
 
 /** \brief Command structure member.
  * 
  * @param pf_valArray       pointer to an Array of parameters to be passed. nullptr if there are none.
  * @param ui8_valArrayLen   Length of the value array.
+ * @param psData            Pointer to the transfer data structure.
  * @returns Command execution success indicator.
 */
 #ifdef VALUE_MODE_HEX
-typedef COMMAND_CB_STATUS(*COMMAND_CB)(uint32_t* pui32_valArray, uint8_t ui8_valArrayLen, PROCESS_INFO *p_info);
+typedef teREQUEST_ACKNOWLEDGE(*COMMAND_CB)(uint32_t* pui32_valArray, uint8_t ui8_valArrayLen, tsTRANSFER_DATA *psData);
 #else
-typedef COMMAND_CB_STATUS(*COMMAND_CB)(float* pf_valArray, uint8_t ui8_valArrayLen, PROCESS_INFO *p_info);
+typedef teREQUEST_ACKNOWLEDGE(*COMMAND_CB)(float* pf_valArray, uint8_t ui8_valArrayLen, tsTRANSFER_DATA *psData);
 #endif
 
 #endif // _COMMANDSTRUCTURE_H_

@@ -89,7 +89,7 @@ typedef struct
 /** \brief SCI Master main structure */
 typedef struct
 {
-    tsSCI_MASTER_VERSION sVersion;
+    tsSCI_VERSION   sVersion;
     tePROTOCOL_STATE eProtocolState;
 
     uint8_t ui8RxBuffer[RX_PACKET_LENGTH];   /*!< RX buffer space. */ 
@@ -107,7 +107,7 @@ typedef struct
 }tsSCI_MASTER;
 
 #define tsSCI_MASTER_DEFAULTS { \
-    tsSCI_MASTER_VERSION_VALUE, \
+    tsSCI_VERSION_VALUE, \
     ePROTOCOL_IDLE, \
     {0},{0}, \
     tsFIFO_BUF_DEFAULTS, \

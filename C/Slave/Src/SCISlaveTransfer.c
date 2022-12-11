@@ -1,5 +1,5 @@
 /**************************************************************************//**
- * \file SCICommands.c
+ * \file SCISlaveTranfer.c
  * \author Roman Holderried
  *
  * \brief Definitions for the SCI commands module.
@@ -8,6 +8,7 @@
  * 	- 2022-01-13 - File creation
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *  - 2022-08-23 - V0.6.0: Upstream data gets not converted into ASCII data
+ *  - 2022-12-11 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
 /******************************************************************************
@@ -17,7 +18,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
-#include "SCICommands.h"
+#include "SCISlaveTransfer.h"
 #include "Variables.h"
 #include "Helpers.h"
 #include "SCIconfig.h"
