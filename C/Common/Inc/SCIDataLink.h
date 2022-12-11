@@ -1,14 +1,18 @@
 /**************************************************************************//**
- * \file DataLink.h
+ * \file SCIDataLink.h
  * \author Roman Holderried
  *
  * \brief Data link layer functionality for the SCI protocol.
  *
  * <b> History </b>
- * 	- 2022-03-18 - File creation
+ * 	- 2022-11-17 - Copy from SCI
+ *
+ * <b> TODOs </b>
+ * @todo Addressable clients
+ * @todo Checksum
  *****************************************************************************/
-#ifndef _DATALINK_H_
-#define _DATALINK_H_
+#ifndef _SCIDATALINK_H_
+#define _SCIDATALINK_H_
 
 /******************************************************************************
  * Includes
@@ -36,11 +40,12 @@ typedef bool(*GET_BUSY_STATE_CB)(void);
 
 typedef enum
 {
-    eDATALINK_RSTATE_ERROR     = -1,
+    eDATALINK_RSTATE_ERROR      = -1,
     eDATALINK_RSTATE_IDLE       = 0,
-    eDATALINK_RSTATE_BUSY       = 1,
-    eDATALINK_RSTATE_PENDING    = 2
-}DATALINK_RECEIVE_STATE;
+    eDATALINK_RSTATE_WAIT_STX   = 1,
+    eDATALINK_RSTATE_BUSY       = 2,
+    eDATALINK_RSTATE_PENDING    = 3
+}teDATALINK_RECEIVE_STATE;
 
 typedef enum
 {
@@ -49,7 +54,7 @@ typedef enum
     eDATALINK_DBGSTATE_S2,
     eDATALINK_DBGSTATE_S3,
     eDATALINK_DBGSTATE_PENDING
-}DATALINK_DBGACT_STATE;
+}teDATALINK_DBGACT_STATE;
 
 typedef enum
 {
@@ -59,20 +64,20 @@ typedef enum
     eDATALINK_TSTATE_SEND_BUFFER,
     eDATALINK_TSTATE_SEND_ETX,
     eDATALINK_TSTATE_READY
-}DATALINK_TRANSMIT_STATE;
+}teDATALINK_TRANSMIT_STATE;
 
 typedef enum
 {
     eDATALINK_ERROR_NONE,
     eDATALINK_ERROR_CHECKSUM,
     eDATALINK_ERRIR_TIMEOUT
-}DATALINK_ERROR;
+}teDATALINK_ERROR;
 
 typedef struct
 {
-    DATALINK_RECEIVE_STATE rState;
-    DATALINK_TRANSMIT_STATE tState;
-    DATALINK_DBGACT_STATE dbgActState;
+    teDATALINK_RECEIVE_STATE rState;
+    teDATALINK_TRANSMIT_STATE tState;
+    teDATALINK_DBGACT_STATE dbgActState;
 
     DBG_FCN_CB dbgFcnArray[MAX_NUMBER_OF_DBG_FUNCTIONS];
     BLOCKING_TX_CB txBlockingCallback;
@@ -83,27 +88,32 @@ typedef struct
     {
         uint8_t * pui8_buf;
         uint8_t ui8_bufLen;
-    }txInfo;
+    }sTxInfo;
 
-}DATALINK;
+    struct
+    {
+        uint32_t ui32BytesToGo;
+        uint8_t ui8MsgByteCnt;
+    }sRxInfo;
 
-#define DATALINK_DEFAULT {eDATALINK_RSTATE_IDLE, eDATALINK_TSTATE_IDLE, eDATALINK_DBGSTATE_IDLE, {NULL}, NULL, NULL, NULL, {NULL, 0}}
+}tsDATALINK;
+
+#define tsDATALINK_DEFAULTS {eDATALINK_RSTATE_IDLE, eDATALINK_TSTATE_IDLE, eDATALINK_DBGSTATE_IDLE, {NULL}, NULL, NULL, NULL, {NULL, 0}, {0,0}}
 
 
 
 /******************************************************************************
  * Function declarations
  *****************************************************************************/
-void receive(DATALINK *p_inst, FIFO_BUF *p_rBuf, uint8_t ui8_data);
-DATALINK_RECEIVE_STATE getDatalinkReceiveState(DATALINK *p_inst);
-DATALINK_TRANSMIT_STATE getDatalinkTransmitState(DATALINK *p_inst);
+void SCIDataLinkReceiveTransfer(tsDATALINK *p_inst, tsFIFO_BUF *p_rBuf, uint8_t ui8_data);
+void SCIDataLinkReceiveStream(tsDATALINK *p_inst, tsFIFO_BUF *p_rBuf, uint8_t ui8_data);
+teDATALINK_RECEIVE_STATE SCIDatalinkGetReceiveState(tsDATALINK *p_inst);
+teDATALINK_TRANSMIT_STATE SCIDatalinkGetTransmitState(tsDATALINK *p_inst);
 
-bool transmit(DATALINK *p_inst, FIFO_BUF * p_tBuf);//uint8_t *pui8_buf, uint8_t ui8_bufLen);
-void transmitStateMachine(DATALINK *p_inst);
-void acknowledgeRx(DATALINK *p_inst);
-void acknowledgeTx(DATALINK *p_inst);
+bool SCIDatalinkTransmit(tsDATALINK *p_inst, tsFIFO_BUF * p_tBuf);//uint8_t *pui8_buf, uint8_t ui8_bufLen);
+void SCIDatalinkTransmitStateMachine(tsDATALINK *p_inst);
+void SCIDatalinkAcknowledgeRx(tsDATALINK *p_inst);
+void SCIDatalinkAcknowledgeTx(tsDATALINK *p_inst);
+void SCIDatalinkStartRx(tsDATALINK *p_inst);
 
-
-
-
-#endif // _DATALINK_H_
+#endif // _SCIDATALINK_H_

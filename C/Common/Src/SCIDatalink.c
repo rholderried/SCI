@@ -1,11 +1,11 @@
 /**************************************************************************//**
- * \file DataLink.c
+ * \file SCIDataLink.c
  * \author Roman Holderried
  *
  * \brief Data link layer functionality for the SCI protocol.
  *
  * <b> History </b>
- * 	- 2022-03-20 - File creation
+ * 	- 2022-11-17 - Copy from SCI
  *****************************************************************************/
 
 /******************************************************************************
@@ -13,19 +13,19 @@
  *****************************************************************************/
 #include <stdint.h>
 #include <stddef.h>
-#include "DataLink.h"
+#include "SCIDataLink.h"
 #include "Buffer.h"
-#include "SCIconfig.h"
+#include "SCIMasterConfig.h"
 
 /******************************************************************************
  * Function definitions
  *****************************************************************************/
 
-void receive(DATALINK *p_inst, FIFO_BUF *p_rBuf, uint8_t ui8_data)
+void SCIDataLinkReceiveTransfer(tsDATALINK *p_inst, tsFIFO_BUF *p_rBuf, uint8_t ui8_data)
 {
     if (ui8_data == STX)
     {
-        if (p_inst->rState == eDATALINK_RSTATE_IDLE)
+        if (p_inst->rState == eDATALINK_RSTATE_WAIT_STX)
         {
             flushBuf(p_rBuf);
             p_inst->rState = eDATALINK_RSTATE_BUSY;
@@ -94,19 +94,51 @@ void receive(DATALINK *p_inst, FIFO_BUF *p_rBuf, uint8_t ui8_data)
 }
 
 //=============================================================================
-DATALINK_RECEIVE_STATE getDatalinkReceiveState(DATALINK *p_inst)
+void SCIDataLinkReceiveStream(tsDATALINK *p_inst, tsFIFO_BUF *p_rBuf, uint8_t ui8_data)
+{
+    // STX triggers the receive state to be busy, but can also appear anywhere in the message.
+    if (p_inst->rState == eDATALINK_RSTATE_WAIT_STX)
+    {
+        if (ui8_data == STX)
+        {
+            // Prepare receive buffer
+            flushBuf(p_rBuf);
+            p_inst->rState = eDATALINK_RSTATE_BUSY;
+            // putElem(p_rBuf, ui8_data);
+            p_inst->sRxInfo.ui8MsgByteCnt = 0;
+            // Receiver now ready to receive stream bytes
+        }
+    }
+    else if (p_inst->rState == eDATALINK_RSTATE_BUSY)
+    {
+        if (p_inst->sRxInfo.ui32BytesToGo > 0 && p_inst->sRxInfo.ui8MsgByteCnt < RX_PACKET_LENGTH)
+        {
+            putElem(p_rBuf, ui8_data);
+            p_inst->sRxInfo.ui32BytesToGo--;
+            p_inst->sRxInfo.ui8MsgByteCnt++;
+        }
+        // Last byte (of transfer or message) must be ETX
+        else if (ui8_data == ETX)
+            p_inst->rState = eDATALINK_RSTATE_PENDING;
+        else
+            p_inst->rState = eDATALINK_RSTATE_IDLE;
+    }
+}
+
+//=============================================================================
+teDATALINK_RECEIVE_STATE SCIDatalinkGetReceiveState(tsDATALINK *p_inst)
 {
     return (p_inst->rState);
 }
 
 //=============================================================================
-DATALINK_TRANSMIT_STATE getDatalinkTransmitState(DATALINK *p_inst)
+teDATALINK_TRANSMIT_STATE SCIDatalinkGetTransmitState(tsDATALINK *p_inst)
 {
     return (p_inst->tState);
 }
 
 //=============================================================================
-bool transmit(DATALINK *p_inst, FIFO_BUF * p_tBuf)
+bool SCIDatalinkTransmit(tsDATALINK *p_inst, tsFIFO_BUF * p_tBuf)
 {
     // We can't send without the proper callbacks
     #ifndef SEND_MODE_BYTE_BY_BYTE
@@ -120,7 +152,7 @@ bool transmit(DATALINK *p_inst, FIFO_BUF * p_tBuf)
 
     if (p_inst->tState == eDATALINK_TSTATE_IDLE)
     {
-        p_inst->txInfo.ui8_bufLen = readBuf(p_tBuf, &p_inst->txInfo.pui8_buf);
+        p_inst->sTxInfo.ui8_bufLen = readBuf(p_tBuf, &p_inst->sTxInfo.pui8_buf);
         p_inst->tState = eDATALINK_TSTATE_SEND_STX;     
     }
 
@@ -128,8 +160,9 @@ bool transmit(DATALINK *p_inst, FIFO_BUF * p_tBuf)
 }
 
 //=============================================================================
-void transmitStateMachine(DATALINK *p_inst)
+void SCIDatalinkTransmitStateMachine(tsDATALINK *p_inst)
 {    
+    // Prevent from entering this function if the Tx interface is still busy
     if (p_inst->txGetBusyStateCallback != NULL)
         if (p_inst->txGetBusyStateCallback())
             return;
@@ -151,16 +184,16 @@ void transmitStateMachine(DATALINK *p_inst)
         case eDATALINK_TSTATE_SEND_BUFFER:
             {   
                 #ifdef SEND_MODE_BYTE_BY_BYTE
-                p_inst->txBlockingCallback(p_inst->txInfo.pui8_buf++, 1);
-                p_inst->txInfo.ui8_bufLen--;
+                p_inst->txBlockingCallback(p_inst->sTxInfo.pui8_buf++, 1);
+                p_inst->sTxInfo.ui8_bufLen--;
 
-                if (p_inst->txInfo.ui8_bufLen == 0)
+                if (p_inst->sTxInfo.ui8_bufLen == 0)
                 {
                     p_inst->tState = eDATALINK_TSTATE_SEND_ETX;
                 }
                 #else
                
-                p_inst->txNonBlockingCallback(p_inst->txInfo.pui8_buf, p_inst->txInfo.ui8_bufLen);
+                p_inst->txNonBlockingCallback(p_inst->sTxInfo.pui8_buf, p_inst->sTxInfo.ui8_bufLen);
                 p_inst->tState = eDATALINK_TSTATE_SEND_ETX;
                 
                 #endif   
@@ -186,13 +219,19 @@ void transmitStateMachine(DATALINK *p_inst)
 }
 
 //=============================================================================
-void acknowledgeRx(DATALINK *p_inst)
+void SCIDatalinkAcknowledgeRx(tsDATALINK *p_inst)
 {
     p_inst->rState = eDATALINK_RSTATE_IDLE;
 }
 
 //=============================================================================
-void acknowledgeTx(DATALINK *p_inst)
+void SCIDatalinkAcknowledgeTx(tsDATALINK *p_inst)
 {
     p_inst->tState = eDATALINK_TSTATE_IDLE;
+}
+
+//=============================================================================
+void SCIDatalinkStartRx(tsDATALINK *p_inst)
+{
+    p_inst->rState = eDATALINK_RSTATE_WAIT_STX;
 }

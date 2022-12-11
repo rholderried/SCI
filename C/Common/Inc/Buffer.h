@@ -10,6 +10,7 @@
  * <b> History </b>
  * 	- 2022-01-13 - File creation
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
+ *  - 2022-12-11 - Merged with former SCI Master version of this file.
  *****************************************************************************/
 
 #ifndef _BUFFER_H_
@@ -34,9 +35,9 @@ typedef struct
     uint8_t     ui8_bufLen;     /*!< Length of the buffer array. */
     uint8_t     ui8_bufSpace;   /*!< Actual remaining buffer space. */
     bool        b_ovfl;         /*!< Overflow indicator. */
-}FIFO_BUF;
+}tsFIFO_BUF;
 
-#define FIFO_BUF_DEFAULT {NULL, 0, 0, 0, false}
+#define tsFIFO_BUF_DEFAULTS {NULL, 0, 0, 0, false}
 
 /******************************************************************************
  * Function declaration
@@ -47,13 +48,13 @@ typedef struct
  * @param *pui8_buf Pointer to the start of the buffer space
  * @param ui8_bufLen Desired length of the buffer
  */
-void fifoBufInit(FIFO_BUF* p_inst, uint8_t *pui8_buf, uint8_t ui8_bufLen);
+void fifoBufInit(tsFIFO_BUF* p_inst, uint8_t *pui8_buf, uint8_t ui8_bufLen);
 
 /** \brief Puts one byte into the buffer
  *
  * @param data Data byte
  */
-void putElem(FIFO_BUF* p_inst, uint8_t ui8_data);
+void putElem(tsFIFO_BUF* p_inst, uint8_t ui8_data);
 
 /** \brief Buffer read operation
  *
@@ -63,33 +64,33 @@ void putElem(FIFO_BUF* p_inst, uint8_t ui8_data);
  * @param   **pui8_target Pointer address.
  * @returns Size of the stored data in bytes.
  */
-uint8_t readBuf (FIFO_BUF* p_inst, uint8_t **pui8_target);
+uint8_t readBuf (tsFIFO_BUF* p_inst, uint8_t **pui8_target);
 
 /** \brief Empties the buffer
  *
  * Sets the buffer index to -1 (start value) and the actual buffer Space
  * to the buffer length. The buffer contents hence are "invalidated".
  */
-void flushBuf (FIFO_BUF* p_inst);
+void flushBuf (tsFIFO_BUF* p_inst);
 
 /** \brief Sets the input pointer to the next free buffer address
  * 
  * @param   **pui8_target Pointer address.
  * @returns True if there was free buffer space available, false otherwise
  */
-bool getNextFreeBufSpace(FIFO_BUF* p_inst, uint8_t **pui8_target);
+bool getNextFreeBufSpace(tsFIFO_BUF* p_inst, uint8_t **pui8_target);
 
 /** \brief Increases the buffer index.
  *
  * @param   ui8_size counts about which to increase the index.
  * @returns True if the operation was successful, false otherwise.
  */
-bool increaseBufIdx(FIFO_BUF* p_inst, uint8_t ui8_size);
+bool increaseBufIdx(tsFIFO_BUF* p_inst, uint8_t ui8_size);
 
 /** \brief Returns the actual (last written) buffer index.
  *
  * @returns actual buffer index.
  */
-int16_t getActualIdx(FIFO_BUF* p_inst);
+int16_t getActualIdx(tsFIFO_BUF* p_inst);
 
 #endif

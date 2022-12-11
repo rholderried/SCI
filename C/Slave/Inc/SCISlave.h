@@ -1,5 +1,5 @@
 /**************************************************************************//**
- * \file SCI.h
+ * \file SCISlave.h
  * \author Roman Holderried
  *
  * \brief Request - Response protocol functionality.
@@ -11,10 +11,11 @@
  * <b> History </b>
  * 	- 2022-01-13 - File creation 
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
+ *  - 2022-12-11 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
-#ifndef _SCI_H_
-#define _SCI_H_
+#ifndef _SCI_SLAVE_H_
+#define _SCI_SLAVE_H_
 
 /******************************************************************************
  * Includes
@@ -31,16 +32,7 @@
 /******************************************************************************
  * Defines
  *****************************************************************************/
-#define SCI
-#define SCI_VERSION_MAJOR    0
-#define SCI_VERSION_MINOR    6
-#define SCI_REVISION         0
 
-#define GETVAR_IDENTIFIER       '?'
-#define SETVAR_IDENTIFIER       '!'
-#define COMMAND_IDENTIFIER      ':'
-#define UPSTREAM_IDENTIFIER     '>'
-#define DOWNSTREAM_IDENTIFIER   '<'
 
 /******************************************************************************
  * Enum Type definitions
@@ -66,13 +58,7 @@ typedef enum
 /******************************************************************************
  * Structure Type definitions
  *****************************************************************************/
-/** @brief SCI version data structure */
-typedef struct
-{
-    uint8_t ui8VersionMajor;
-    uint8_t ui8VersionMinor;
-    uint8_t ui8Revision;
-}tSCI_VERSION;
+
 
 typedef struct
 {
@@ -161,4 +147,4 @@ tSCI_ERROR commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize, COMMAND *pCm
  * @returns size of the generated message string.
  */
 uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE response);
-#endif //_SCI_H_
+#endif //_SCI_SLAVE_H_

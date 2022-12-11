@@ -5,8 +5,7 @@
  * \brief Definitions of the Helpers modules.
  *
  * <b> History </b>
- * 	- 2022-01-17 - File creation
- *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
+ * 	- 2022-11-17 - Copy from SCI
  *****************************************************************************/
 /******************************************************************************
  * Includes

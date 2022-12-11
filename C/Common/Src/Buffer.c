@@ -5,8 +5,7 @@
  * \brief Definitions for the Buffer module.
  *
  * <b> History </b>
- * 	- 2022-01-13 - File creation
- *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
+ * 	- 2022-11-17 - Copy from SCI
  *****************************************************************************/
 
 #include "Buffer.h"
@@ -14,7 +13,7 @@
 /******************************************************************************
  * Function definitions
  *****************************************************************************/
-void fifoBufInit(FIFO_BUF* p_inst, uint8_t *pui8_buf, uint8_t ui8_bufLen)
+void fifoBufInit(tsFIFO_BUF* p_inst, uint8_t *pui8_buf, uint8_t ui8_bufLen)
 {
     p_inst->b_ovfl = false;
     p_inst->ui8_bufLen = ui8_bufLen;
@@ -23,7 +22,7 @@ void fifoBufInit(FIFO_BUF* p_inst, uint8_t *pui8_buf, uint8_t ui8_bufLen)
 }
 
 //=============================================================================
-void putElem(FIFO_BUF* p_inst, uint8_t ui8_data)
+void putElem(tsFIFO_BUF* p_inst, uint8_t ui8_data)
 {
     // Put the data into the buffer only when it is not going to be overflowed
     if (p_inst->ui8_bufSpace > 0)
@@ -37,7 +36,7 @@ void putElem(FIFO_BUF* p_inst, uint8_t ui8_data)
 }
 
 //=============================================================================
-uint8_t readBuf(FIFO_BUF* p_inst, uint8_t **pui8_target)
+uint8_t readBuf(tsFIFO_BUF* p_inst, uint8_t **pui8_target)
 {
     uint8_t size = p_inst->i16_bufIdx + 1;
 
@@ -49,7 +48,7 @@ uint8_t readBuf(FIFO_BUF* p_inst, uint8_t **pui8_target)
 }
 
 //=============================================================================
-void flushBuf (FIFO_BUF* p_inst)
+void flushBuf (tsFIFO_BUF* p_inst)
 {
     p_inst->i16_bufIdx      = -1;
     p_inst->ui8_bufSpace    = p_inst->ui8_bufLen;
@@ -57,7 +56,7 @@ void flushBuf (FIFO_BUF* p_inst)
 } 
 
 //=============================================================================
-bool getNextFreeBufSpace(FIFO_BUF* p_inst, uint8_t **pui8_target)
+bool getNextFreeBufSpace(tsFIFO_BUF* p_inst, uint8_t **pui8_target)
 {
     bool success = false;
 
@@ -71,7 +70,7 @@ bool getNextFreeBufSpace(FIFO_BUF* p_inst, uint8_t **pui8_target)
 }
 
 //=============================================================================
-bool increaseBufIdx(FIFO_BUF* p_inst, uint8_t ui8_size)
+bool increaseBufIdx(tsFIFO_BUF* p_inst, uint8_t ui8_size)
 {
     bool success = false;
 
@@ -87,7 +86,7 @@ bool increaseBufIdx(FIFO_BUF* p_inst, uint8_t ui8_size)
 }
 
 //=============================================================================
-int16_t getActualIdx(FIFO_BUF* p_inst)
+int16_t getActualIdx(tsFIFO_BUF* p_inst)
 {
     return p_inst->i16_bufIdx;
 }

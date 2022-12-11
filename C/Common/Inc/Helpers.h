@@ -5,7 +5,7 @@
  * \brief Helper functions that can be generically used.
  *
  * <b> History </b>
- * 	- 2022-01-14 - File creation
+ * 	- 2022-11-17 - Copy from SCI
  *****************************************************************************/
 #ifndef _HELPERS_H_
 #define _HELPERS_H_
