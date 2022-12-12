@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
-#include "Variables.h"
+#include "SCIVarAccess.h"
 #include "SCIconfig.h"
 #include "SCICommon.h"
 
@@ -28,34 +28,34 @@ extern const uint8_t ui8_byteLength[];
  * Function definitions
  *****************************************************************************/
 
-tSCI_ERROR initVarstruct(VAR_ACCESS* p_varAccess)
+teSCI_SLAVE_ERROR InitVarstruct(tsVAR_ACCESS* pVarAccess)
 {
     uint16_t    ui16_currentEEVarAddress = ADDRESS_OFFET;
     uint8_t     ui8_incrementor = 0;
     uint8_t     ui8_actualEEIdx = 0;
-    tSCI_ERROR  eError = eSCI_ERROR_NONE;
+    teSCI_SLAVE_ERROR  eError = eSCI_ERROR_NONE;
 
     for (uint8_t i = 0; i < SIZE_OF_VAR_STRUCT; i++)
     {
-        if (p_varAccess->p_varStruct[i].vartype == eVARTYPE_EEPROM)
+        if (pVarAccess->pVarStruct[i].eVartype == eVARTYPE_EEPROM)
         {
             // Check if there is enough space in the address table
             if (ui8_actualEEIdx == MAX_NUMBER_OF_EEPROM_VARS)
                 return eSCI_ERROR_EEPROM_PARTITION_TABLE_NOT_SUFFICIENT;
 
-            p_varAccess->eepromPartitionTable[ui8_actualEEIdx].ui8_idx = i;
-            p_varAccess->eepromPartitionTable[ui8_actualEEIdx].ui16_address = ui16_currentEEVarAddress;
+            pVarAccess->eepromPartitionTable[ui8_actualEEIdx].ui8Idx = i;
+            pVarAccess->eepromPartitionTable[ui8_actualEEIdx].ui16Address = ui16_currentEEVarAddress;
 
             ui8_actualEEIdx++;
-            //writeEEPROMwithValueFromVarStruct(p_varAccess, i + 1);
-            eError = readEEPROMValueIntoVarStruct(p_varAccess, i + 1);
+            //WriteEEPROMwithValueFromVarStruct(pVarAccess, i + 1);
+            eError = ReadEEPROMValueIntoVarStruct(pVarAccess, i + 1);
 
             // We ignore EEPROM read errors and keep the default value of the RAM variable
             // To enable write Access, we establish the EEPROM partition table anyways.
             // if (eError != eSCI_ERROR_NONE)
             //     return eError;
 
-            ui8_incrementor = ui8_byteLength[p_varAccess->p_varStruct[i].datatype] / EEPROM_ADDRESSTYPE;
+            ui8_incrementor = ui8_byteLength[pVarAccess->pVarStruct[i].eDatatype] / EEPROM_ADDRESSTYPE;
             ui16_currentEEVarAddress += ui8_incrementor > 0 ? ui8_incrementor : 1;
         }
     }
@@ -64,68 +64,68 @@ tSCI_ERROR initVarstruct(VAR_ACCESS* p_varAccess)
 }
 
 //=============================================================================
-tSCI_ERROR readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float *pf_val)
+teSCI_SLAVE_ERROR ReadValFromVarStruct(tsVAR_ACCESS* pVarAccess, int16_t i16VarNum, float *pfVal)
 {
-    int16_t i16_varIdx = i16_varNum - 1;
+    int16_t i16_varIdx = i16VarNum - 1;
     //bool b_success;
     union
     {
-        uint8_t     ui8_val;
+        uint8_t     ui8Val;
         int8_t      i8_val;
-        uint16_t    ui16_val;
-        int16_t     i16_val;
-        uint32_t    ui32_val;
-        int32_t     i32_val;
-        float       f_val;
+        uint16_t    ui16Val;
+        int16_t     i16Val;
+        uint32_t    ui32Val;
+        int32_t     i32Val;
+        float       fVal;
     }ret;
 
-    ret.ui32_val = 0;
+    ret.ui32Val = 0;
 
-    if (i16_varNum > 0 && i16_varNum <= SIZE_OF_VAR_STRUCT)
+    if (i16VarNum > 0 && i16VarNum <= SIZE_OF_VAR_STRUCT)
     {
 
-        switch (p_varAccess->p_varStruct[i16_varIdx].datatype)
+        switch (pVarAccess->pVarStruct[i16_varIdx].eDatatype)
         {
             case eDTYPE_UINT8:
-                ret.ui8_val = *(uint8_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                ret.ui8Val = *(uint8_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal);
                 #ifndef VALUE_MODE_HEX
-                *pf_val = (float)ret.ui8_val;
+                *pfVal = (float)ret.ui8Val;
                 #endif
                 break;
             case eDTYPE_INT8:
-                ret.i8_val = *(int8_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                ret.i8_val = *(int8_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal);
                 #ifndef VALUE_MODE_HEX
-                *pf_val = (float)ret.i8_val;
+                *pfVal = (float)ret.i8_val;
                 #endif
                 break;
             case eDTYPE_UINT16:
-                ret.ui16_val = *(uint16_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                ret.ui16Val = *(uint16_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal);
                 #ifndef VALUE_MODE_HEX
-                *pf_val = (float)ret.ui16_val;
+                *pfVal = (float)ret.ui16Val;
                 #endif
                 break;
             case eDTYPE_INT16:
-                ret.i16_val = *(int16_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                ret.i16Val = *(int16_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal);
                 #ifndef VALUE_MODE_HEX
-                *pf_val = (float)ret.i16_val;
+                *pfVal = (float)ret.i16Val;
                 #endif
                 break;
             case eDTYPE_UINT32:
-                ret.ui32_val = *(uint32_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                ret.ui32Val = *(uint32_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal);
                 #ifndef VALUE_MODE_HEX
-                *pf_val = (float)ret.ui32_val;
+                *pfVal = (float)ret.ui32Val;
                 #endif
                 break;
             case eDTYPE_INT32:
-                ret.i32_val = *(int32_t*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                ret.i32Val = *(int32_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal);
                 #ifndef VALUE_MODE_HEX
-                *pf_val = (float)ret.i32_val;
+                *pfVal = (float)ret.i32Val;
                 #endif
                 break;
             case eDTYPE_F32:
-                ret.f_val   = *(float*)(p_varAccess->p_varStruct[i16_varIdx].val);
+                ret.fVal   = *(float*)(pVarAccess->pVarStruct[i16_varIdx].pVal);
                 #ifndef VALUE_MODE_HEX
-                *pf_val = ret.f_val;
+                *pfVal = ret.fVal;
                 #endif
                 break;
 
@@ -135,7 +135,7 @@ tSCI_ERROR readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, flo
         }
 
         #ifdef VALUE_MODE_HEX
-        *pf_val = ret.f_val;
+        *pfVal = ret.fVal;
         #endif
 
         return eSCI_ERROR_NONE;
@@ -145,73 +145,73 @@ tSCI_ERROR readValFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, flo
 }
 
 //=============================================================================
-tSCI_ERROR writeValToVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, float f_val)
+teSCI_SLAVE_ERROR WriteValToVarStruct(tsVAR_ACCESS* pVarAccess, int16_t i16VarNum, float fVal)
 {
-    int16_t i16_varIdx = i16_varNum - 1;
+    int16_t i16_varIdx = i16VarNum - 1;
     //bool b_success;
 
     union
     {
-        uint8_t     ui8_val;
+        uint8_t     ui8Val;
         int8_t      i8_val;
-        uint16_t    ui16_val;
-        int16_t     i16_val;
-        uint32_t    ui32_val;
-        int32_t     i32_val;
-        float       f_val;
+        uint16_t    ui16Val;
+        int16_t     i16Val;
+        uint32_t    ui32Val;
+        int32_t     i32Val;
+        float       fVal;
     }in;
 
-    in.f_val = f_val;
+    in.fVal = fVal;
 
-    if (i16_varNum > 0 && i16_varNum <= SIZE_OF_VAR_STRUCT)
+    if (i16VarNum > 0 && i16VarNum <= SIZE_OF_VAR_STRUCT)
     {
 
-        switch (p_varAccess->p_varStruct[i16_varIdx].datatype)
+        switch (pVarAccess->pVarStruct[i16_varIdx].eDatatype)
         {
             case eDTYPE_UINT8:
                 #ifdef VALUE_MODE_HEX
-                *(uint8_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.ui8_val;
+                *(uint8_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = in.ui8Val;
                 #else
-                *(uint8_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (uint8_t)f_val;
+                *(uint8_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = (uint8_t)fVal;
                 #endif
                 break;
             case eDTYPE_INT8:
                 #ifdef VALUE_MODE_HEX
-                *(int8_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.i8_val;
+                *(int8_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = in.i8_val;
                 #else
-                *(int8_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (int8_t)f_val;
+                *(int8_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = (int8_t)fVal;
                 #endif
                 break;
             case eDTYPE_UINT16:
                 #ifdef VALUE_MODE_HEX
-                *(uint16_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.ui16_val;
+                *(uint16_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = in.ui16Val;
                 #else
-                *(uint16_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (uint16_t)f_val;
+                *(uint16_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = (uint16_t)fVal;
                 #endif
                 break;
             case eDTYPE_INT16:
                 #ifdef VALUE_MODE_HEX
-                *(int16_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.i16_val;
+                *(int16_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = in.i16Val;
                 #else
-                *(int16_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (int16_t)f_val;
+                *(int16_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = (int16_t)fVal;
                 #endif
                 break;
             case eDTYPE_UINT32:
                 #ifdef VALUE_MODE_HEX
-               *(uint32_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.ui32_val;
+               *(uint32_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = in.ui32Val;
                #else
-               *(uint32_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (uint32_t)f_val;
+               *(uint32_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = (uint32_t)fVal;
                #endif
                break;
             case eDTYPE_INT32:
                 #ifdef VALUE_MODE_HEX
-                *(int32_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = in.i32_val;
+                *(int32_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = in.i32Val;
                 #else
-                *(int32_t*)(p_varAccess->p_varStruct[i16_varIdx].val) = (int32_t)f_val;
+                *(int32_t*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = (int32_t)fVal;
                 #endif
                 break;
             case eDTYPE_F32:
-                *(float*)(p_varAccess->p_varStruct[i16_varIdx].val) = f_val;
+                *(float*)(pVarAccess->pVarStruct[i16_varIdx].pVal) = fVal;
                 break;
 
             default:
@@ -225,7 +225,7 @@ tSCI_ERROR writeValToVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum, floa
 }
 
 //=============================================================================
-tSCI_ERROR readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
+teSCI_SLAVE_ERROR ReadEEPROMValueIntoVarStruct(tsVAR_ACCESS* pVarAccess, int16_t i16VarNum)
 {
     bool        successIndicator = true;
     uint32_t    ui32_tmp = 0;
@@ -233,27 +233,27 @@ tSCI_ERROR readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_var
     uint16_t    ui16_eepromAddress;
 
     union {
-        uint8_t     ui8_val;
+        uint8_t     ui8Val;
         int8_t      i8_val;
-        uint16_t    ui16_val;
-        int16_t     i16_val;
-        uint32_t    ui32_val;
-        int32_t     i32_val;
-        float       f_val;
+        uint16_t    ui16Val;
+        int16_t     i16Val;
+        uint32_t    ui32Val;
+        int32_t     i32Val;
+        float       fVal;
     } u_tmp;
     
 
 
-    u_tmp.ui32_val = 0;
-    if (p_varAccess->p_varStruct[i16_varNum - 1].vartype == eVARTYPE_EEPROM && p_varAccess->readEEPROM_cb != NULL)
+    u_tmp.ui32Val = 0;
+    if (pVarAccess->pVarStruct[i16VarNum - 1].eVartype == eVARTYPE_EEPROM && pVarAccess->cbReadEEPROM != NULL)
     {
         // Determine how many EEPROM reads have to be accomplished
-        ui8_numberOfIncs = ui8_byteLength[p_varAccess->p_varStruct[i16_varNum - 1].datatype]/EEPROM_ADDRESSTYPE;
+        ui8_numberOfIncs = ui8_byteLength[pVarAccess->pVarStruct[i16VarNum - 1].eDatatype]/EEPROM_ADDRESSTYPE;
         ui8_numberOfIncs = ui8_numberOfIncs > 0 ? ui8_numberOfIncs : 1;
 
 
         // Look for the partition table index of the eeprom var
-        ui16_eepromAddress = getEEPROMAddress(p_varAccess, i16_varNum);
+        ui16_eepromAddress = GetEEPROMAddress(pVarAccess, i16VarNum);
 
         if(ui16_eepromAddress == EEEPROM_ADDRESS_ILLEGAL)
             return eSCI_ERROR_EEPROM_ADDRESS_UNKNOWN;
@@ -261,39 +261,39 @@ tSCI_ERROR readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_var
 
         for (uint8_t i = 0; i < ui8_numberOfIncs; i++)
         {
-            successIndicator &= p_varAccess->readEEPROM_cb(&ui32_tmp, ui16_eepromAddress + i);
+            successIndicator &= pVarAccess->cbReadEEPROM(&ui32_tmp, ui16_eepromAddress + i);
 
             if (!successIndicator)
                return eSCI_ERROR_EEPROM_READOUT_FAILED;
             
             ui32_tmp <<= (i * EEPROM_ADDRESSTYPE * 8);
-            u_tmp.ui32_val |= ui32_tmp;
+            u_tmp.ui32Val |= ui32_tmp;
             ui32_tmp = 0;
         }
 
         // Write the data structure with the read value
-        switch(p_varAccess->p_varStruct[i16_varNum - 1].datatype)
+        switch(pVarAccess->pVarStruct[i16VarNum - 1].eDatatype)
         {
             case eDTYPE_UINT8:
-                *(uint8_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val) = u_tmp.ui8_val;
+                *(uint8_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal) = u_tmp.ui8Val;
                 break;
             case eDTYPE_INT8:
-                *(int8_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val) = u_tmp.i8_val;
+                *(int8_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal) = u_tmp.i8_val;
                 break;
             case eDTYPE_UINT16:
-                *(uint16_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val) = u_tmp.ui16_val;
+                *(uint16_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal) = u_tmp.ui16Val;
                 break;
             case eDTYPE_INT16:
-                *(int16_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val) = u_tmp.i16_val;
+                *(int16_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal) = u_tmp.i16Val;
                 break;
             case eDTYPE_UINT32:
-                *(uint32_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val) = u_tmp.ui32_val;
+                *(uint32_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal) = u_tmp.ui32Val;
                 break;
             case eDTYPE_INT32:
-                *(int32_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val) = u_tmp.i32_val;
+                *(int32_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal) = u_tmp.i32Val;
                 break;
             case eDTYPE_F32:
-                *(float*)(p_varAccess->p_varStruct[i16_varNum - 1].val) = u_tmp.f_val;
+                *(float*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal) = u_tmp.fVal;
                 break;
             default:
                 return eSCI_ERROR_UNKNOWN_DATATYPE;
@@ -304,7 +304,7 @@ tSCI_ERROR readEEPROMValueIntoVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_var
 }
 
 //=============================================================================
-tSCI_ERROR writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
+teSCI_SLAVE_ERROR WriteEEPROMwithValueFromVarStruct(tsVAR_ACCESS* pVarAccess, int16_t i16VarNum)
 {
     bool        successIndicator = true;
     uint32_t    ui32_mask = 0, ui32_tmp = 0;
@@ -312,55 +312,55 @@ tSCI_ERROR writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i1
     uint16_t    ui16_eepromAddress;
 
     union {
-        uint8_t     ui8_val;
+        uint8_t     ui8Val;
         int8_t      i8_val;
-        uint16_t    ui16_val;
-        int16_t     i16_val;
-        uint32_t    ui32_val;
-        int32_t     i32_val;
-        float       f_val;
+        uint16_t    ui16Val;
+        int16_t     i16Val;
+        uint32_t    ui32Val;
+        int32_t     i32Val;
+        float       fVal;
     } u_tmp;
     
-    u_tmp.ui32_val = 0;
+    u_tmp.ui32Val = 0;
 
-    if (p_varAccess->p_varStruct[i16_varNum - 1].vartype == eVARTYPE_EEPROM && p_varAccess->writeEEPROM_cb != NULL)
+    if (pVarAccess->pVarStruct[i16VarNum - 1].eVartype == eVARTYPE_EEPROM && pVarAccess->cbWriteEEPROM != NULL)
     {
         // Look for the partition table index of the eeprom var
-        ui16_eepromAddress = getEEPROMAddress(p_varAccess, i16_varNum);
+        ui16_eepromAddress = GetEEPROMAddress(pVarAccess, i16VarNum);
 
         if(ui16_eepromAddress == EEEPROM_ADDRESS_ILLEGAL)
             return eSCI_ERROR_EEPROM_ADDRESS_UNKNOWN;
 
         // Read data from the data structure
-        switch(p_varAccess->p_varStruct[i16_varNum - 1].datatype)
+        switch(pVarAccess->pVarStruct[i16VarNum - 1].eDatatype)
         {
             case eDTYPE_UINT8:
-                u_tmp.ui8_val = *(uint8_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val);
+                u_tmp.ui8Val = *(uint8_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal);
                 break;
             case eDTYPE_INT8:
-                u_tmp.i8_val = *(int8_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val);
+                u_tmp.i8_val = *(int8_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal);
                 break;
             case eDTYPE_UINT16:
-                u_tmp.ui16_val = *(uint16_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val);
+                u_tmp.ui16Val = *(uint16_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal);
                 break;
             case eDTYPE_INT16:
-                u_tmp.i16_val = *(int16_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val);
+                u_tmp.i16Val = *(int16_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal);
                 break;
             case eDTYPE_UINT32:
-                u_tmp.ui32_val = *(uint32_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val);
+                u_tmp.ui32Val = *(uint32_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal);
                 break;
             case eDTYPE_INT32:
-                u_tmp.i32_val = *(int32_t*)(p_varAccess->p_varStruct[i16_varNum - 1].val);
+                u_tmp.i32Val = *(int32_t*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal);
                 break;
             case eDTYPE_F32:
-                u_tmp.f_val = *(float*)(p_varAccess->p_varStruct[i16_varNum - 1].val);
+                u_tmp.fVal = *(float*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal);
                 break;
             default:
                 return eSCI_ERROR_UNKNOWN_DATATYPE;
         }
 
         // Determine how many EEPROM reads have to be accomplished
-        ui8_numberOfIncs = ui8_byteLength[p_varAccess->p_varStruct[i16_varNum - 1].datatype]/EEPROM_ADDRESSTYPE;
+        ui8_numberOfIncs = ui8_byteLength[pVarAccess->pVarStruct[i16VarNum - 1].eDatatype]/EEPROM_ADDRESSTYPE;
         ui8_numberOfIncs = ui8_numberOfIncs > 0 ? ui8_numberOfIncs : 1;
 
         // Generate the bit mask
@@ -372,10 +372,10 @@ tSCI_ERROR writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i1
         // Write EEPROM 
         for (uint8_t i = ui8_numberOfIncs; i > 0; i--)
         {
-            ui32_tmp = u_tmp.ui32_val >> (i - 1) * EEPROM_ADDRESSTYPE * 8;
+            ui32_tmp = u_tmp.ui32Val >> (i - 1) * EEPROM_ADDRESSTYPE * 8;
             ui32_tmp &= ui32_mask;
 
-            successIndicator &= p_varAccess->writeEEPROM_cb(ui32_tmp, ui16_eepromAddress + (i - 1));
+            successIndicator &= pVarAccess->cbWriteEEPROM(ui32_tmp, ui16_eepromAddress + (i - 1));
 
             if (!successIndicator)
                 return eSCI_ERROR_EEPROM_WRITE_FAILED;
@@ -386,31 +386,31 @@ tSCI_ERROR writeEEPROMwithValueFromVarStruct(VAR_ACCESS* p_varAccess, int16_t i1
 }
 
 //=============================================================================
-uint16_t getEEPROMAddress(VAR_ACCESS* p_varAccess, int16_t i16_varNum)
+uint16_t GetEEPROMAddress(tsVAR_ACCESS* pVarAccess, int16_t i16VarNum)
 {
-    uint16_t ui16_address = EEEPROM_ADDRESS_ILLEGAL;
-    uint8_t ui8_idx = 0;
+    uint16_t ui16Address = EEEPROM_ADDRESS_ILLEGAL;
+    uint8_t ui8Idx = 0;
 
-    while (ui8_idx < MAX_NUMBER_OF_EEPROM_VARS)
+    while (ui8Idx < MAX_NUMBER_OF_EEPROM_VARS)
     {
-        if ((i16_varNum - 1) == p_varAccess->eepromPartitionTable[ui8_idx].ui8_idx)
+        if ((i16VarNum - 1) == pVarAccess->eepromPartitionTable[ui8Idx].ui8Idx)
         {
-            ui16_address = p_varAccess->eepromPartitionTable[ui8_idx].ui16_address;
+            ui16Address = pVarAccess->eepromPartitionTable[ui8Idx].ui16Address;
             break;
         }
         
-        ui8_idx++;
+        ui8Idx++;
     }
 
-    return ui16_address;
+    return ui16Address;
 }
 
 //=============================================================================
-tSCI_ERROR getVar(VAR_ACCESS* p_varAccess, VAR* p_Var, int16_t i16_varNum)
+teSCI_SLAVE_ERROR GetVar(tsVAR_ACCESS* pVarAccess, tsSCIVAR* pVar, int16_t i16VarNum)
 {
-    if ((i16_varNum > 0 && i16_varNum))    
+    if ((i16VarNum > 0 && i16VarNum))    
     {
-        *p_Var = p_varAccess->p_varStruct[i16_varNum - 1];
+        *pVar = pVarAccess->pVarStruct[i16VarNum - 1];
         return eSCI_ERROR_NONE;
     }
     

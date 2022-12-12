@@ -20,7 +20,6 @@
 #include <stdbool.h>
 
 #include "SCICommon.h"
-#include "SCITransfer.h"
 
 /******************************************************************************
  * Defines
@@ -48,13 +47,14 @@ teSCI_MASTER_ERROR SCIMasterRequestBuilder(uint8_t *pui8Buf, uint8_t *pui8Size, 
 
 /** \brief Parses the SCI response from the device (transfer).
  * 
- * @param pui8Buf       Pointer to the message buffer
- * @param ui8MsgSize    Size of the message to be analyzed 
- * @param pRsp          pointer to the response data structure
+ * @param pui8Buf           Pointer to the message buffer
+ * @param ui8MsgSize        Size of the message to be analyzed 
+ * @param pui8MsgDataLen    Pointer to the variable counting the amount of data of the current message
+ * @param pRsp              pointer to the response data structure
  * 
  * @returns Error indicator
 */
-teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8MsgSize, tsRESPONSE *pRsp);
+teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8DataframeLen, uint8_t *pui8MsgDataLen, tsRESPONSE *psRsp);
 
 /** \brief Parses the SCI response from the device (stream).
  * 
@@ -64,7 +64,7 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8MsgSize,
  * 
  * @returns Error indicator
 */
-teSCI_MASTER_ERROR SCIMasterStreamParser(uint8_t* pui8Buf, uint8_t ui8MsgSize, tsRESPONSE *pRsp);
+teSCI_MASTER_ERROR SCIMasterStreamParser(uint8_t* pui8Buf, uint8_t ui8DataframeLen, uint8_t *pui8MsgDataLen, tsRESPONSE *psRsp);
 
 /** \brief Internal function to check the acknowledge string of the messages
  * 

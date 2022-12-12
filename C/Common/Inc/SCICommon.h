@@ -13,7 +13,8 @@
 /******************************************************************************
  * Includes
  *****************************************************************************/
-
+#include <stdint.h>
+#include <stdbool.h>
 /******************************************************************************
  * defines
  *****************************************************************************/
@@ -43,7 +44,7 @@ typedef enum
     eSCI_ERROR_NONE = 0,
     eSCI_ERROR_VAR_NUMBER_INVALID,
     eSCI_ERROR_UNKNOWN_DATATYPE,
-    eSCI_ERROR_COMMAND_IDENTIFIER_NOT_FOUND,
+    eSCI_ERROR_REQUEST_IDENTIFIER_NOT_FOUND,
     eSCI_ERROR_NUMBER_CONVERSION_FAILED,
     eSCI_ERROR_ACKNOWLEDGE_UNKNOWN,
     eSCI_ERROR_PARAMETER_CONVERSION_FAILED,
@@ -62,10 +63,10 @@ typedef enum
     eSCI_ERROR_EEPROM_ADDRESS_UNKNOWN,
     eSCI_ERROR_EEPROM_READOUT_FAILED,
     eSCI_ERROR_EEPROM_WRITE_FAILED,
-    eSCI_ERROR_COMMAND_IDENTIFIER_NOT_FOUND,
+    eSCI_ERROR_REQUEST_IDENTIFIER_NOT_FOUND,
     eSCI_ERROR_VARIABLE_NUMBER_CONVERSION_FAILED,
-    eSCI_ERROR_COMMAND_VALUE_CONVERSION_FAILED,
-    eSCI_ERROR_COMMAND_UNKNOWN,
+    eSCI_ERROR_REQUEST_VALUE_CONVERSION_FAILED,
+    eSCI_ERROR_REQUEST_UNKNOWN,
     eSCI_ERROR_UPSTREAM_NOT_INITIATED
 }teSCI_SLAVE_ERROR;
 
@@ -78,5 +79,14 @@ typedef struct
 }tsSCI_VERSION;
 
 #define tsSCI_VERSION_VALUE {SCI_VERSION_MAJOR, SCI_VERSION_MINOR, SCI_REVISION}
+
+typedef enum
+{
+    ePROTOCOL_ERROR         = -1,
+    ePROTOCOL_IDLE          = 0,
+    ePROTOCOL_SENDING       = 1,
+    ePROTOCOL_EVALUATING    = 2,
+    ePROTOCOL_RECEIVING     = 3
+}tePROTOCOL_STATE;
 
 #endif //_SCICOMMON_H_

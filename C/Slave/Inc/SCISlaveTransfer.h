@@ -2,24 +2,25 @@
  * \file SCISlaveTransfer.h
  * \author Roman Holderried
  *
- * \brief Command evaluation and variable structure access.
+ * \brief Transfer evaluation for the SCI Slave module.
  *
  * <b> History </b>
  * 	- 2022-01-13 - File creation
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *  - 2022-12-11 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
-#ifndef _COMMANDS_H_
-#define _COMMANDS_H_
+#ifndef _SCISLAVETRANSFER_H_
+#define _SCISLAVETRANSFER_H_
 
 /******************************************************************************
  * Includes
  *****************************************************************************/
 #include <stdint.h>
 #include <stdbool.h>
-#include "Variables.h"
+#include "SCIVariables.h"
 #include "CommandStucture.h"
 #include "SCITransferCommon.h"
+#include "SCICommon.h"
 
 /******************************************************************************
  * Defines
@@ -84,36 +85,36 @@ typedef struct
             uint8_t ongoing             : 1;
             uint8_t upstream            : 1;
             uint8_t reserved            : 5;
-        }ui8_controlBits;
-        uint8_t ui8_controlByte;
+        }ui8ControlBits;
+        
+        uint8_t ui8ControlByte;
     };
-    uint32_t    ui32_dataIdx;
+    uint32_t    ui32DataIdx;
     tsRESPONSE  sRsp;
-}RESPONSECONTROL;
+}tsRESPONSECONTROL;
 
-#define RESPONSECONTROL_DEFAULT {{.ui8_controlByte = 0}, 0, RESPONSE_DEFAULT}
+#define tsRESPONSECONTROL_DEFAULTS {{.ui8ControlByte = 0}, 0, tsRESPONSE_DEFAULTS}
 
 typedef struct
 {
-    RESPONSECONTROL responseControl;
+    tsRESPONSECONTROL sResponseControl;     
 
-    const COMMAND_CB *p_cmdCBStruct;      /*!< Command callback structure.*/
-}SCI_COMMANDS;
+    const COMMAND_CB *pCmdCBStruct;         /*!< Command callback structure.*/
 
-#define SCI_COMMANDS_DEFAULT    {RESPONSECONTROL_DEFAULT, NULL}
+}tsSCI_TRANSFER_SLAVE;
+
+#define tsSCI_TRANSFER_SLAVE_DEFAULTS    {tsRESPONSECONTROL_DEFAULTS, NULL}
 
 /******************************************************************************
  * Function declarations
  *****************************************************************************/
-/** \brief Executes the incoming command.
+/** \brief Executes the incoming request.
  *
  * @param cmd               Holds the command information from the parsed command.
  * @returns Response structure.
  */
-tSCI_ERROR executeCmd(SCI_COMMANDS *p_inst, VAR_ACCESS *p_varAccess, COMMAND cmd, RESPONSE *pRsp); 
+teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCESS *pVarAccess, tsREQUEST sReq, tsRESPONSE *psRsp);
 
-uint8_t fillBufferWithValues(SCI_COMMANDS *p_inst, uint8_t * p_buf, uint8_t ui8_maxSize);
+void clearResponseControl(tsSCI_TRANSFER_SLAVE *psTransfer);
 
-void clearResponseControl(SCI_COMMANDS *p_inst);
-
-#endif //_COMMANDS_H_
+#endif //_SCISLAVETRANSFER_H_

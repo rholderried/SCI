@@ -21,8 +21,8 @@
 #include <stdlib.h>
 
 #include "SCIMaster.h"
-#include "SCIDataframe.h"
-#include "SCITransfer.h"
+#include "SCIMasterDataframe.h"
+#include "SCIMasterTransfer.h"
 #include "SCIDataLink.h"
 #include "Buffer.h"
 #include "Helpers.h"
@@ -108,9 +108,9 @@ void SCIMasterSM (void)
 
                 // Parse the response
                 if (sSciMaster.ui8RecMode == SCI_RECEIVE_MODE_TRANSFER)
-                    SCIMasterResponseParser(pui8Buf, ui8DframeLen, &sRsp);
+                    SCIMasterResponseParser(pui8Buf, ui8DframeLen, &sSciMaster.sSCITransfer.sTransferInfo.ui8MessageDataCnt ,&sRsp);
                 else if (sSciMaster.ui8RecMode == SCI_RECEIVE_MODE_STREAM)
-                    SCIMasterStreamParser(pui8Buf, ui8DframeLen, &sRsp);
+                    SCIMasterStreamParser(pui8Buf, ui8DframeLen, &sSciMaster.sSCITransfer.sTransferInfo.ui8MessageDataCnt, &sRsp);
 
                 // Process the response
                 SCITransferControl(&sSciMaster.sSCITransfer, sRsp);

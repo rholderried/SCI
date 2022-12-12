@@ -15,11 +15,12 @@
 #include <stdint.h>
 
 #include "SCISlave.h"
-#include "SCICommands.h"
+#include "SCISlaveTransfer.h"
+#include "SCISlaveDataframe.h"
 #include "SCIconfig.h"
 #include "CommandStucture.h"
 #include "Helpers.h"
-#include "Variables.h"
+#include "SCIVariables.h"
 #include "Buffer.h"
 
 
@@ -33,57 +34,57 @@
  *****************************************************************************/
 static tsSCI_SLAVE sSciSlave = tsSCI_SLAVE_DEFAULTS;
 // Note: The idizes correspond to the values of the COMMAND_CB_STATUS enum values!
-static const uint8_t responseDesignator [5][3] = {"ACK", "DAT", "UPS", "ERR", "NAK"};
-static const uint8_t cmdIdArr[6] = {'#', '?', '!', ':', '>', '<'};
-const uint8_t ui8_byteLength[7] = {1,1,2,2,4,4,4};
+// static const uint8_t ui8RequestAck [5][3]   = {"ACK", "DAT", "UPS", "ERR", "NAK"};
+// static const uint8_t ui8CmdIdArr[6]         = {'#', '?', '!', ':', '>', '<'};
+// const uint8_t ui8ByteLength[7]              = {1,1,2,2,4,4,4};
 
 /******************************************************************************
  * Function definitions
  *****************************************************************************/
 //===================================================================================
-tsSCI_VERSION SCI_GetVersion(void)
+tsSCI_VERSION SCISlaveGetVersion(void)
 {
     return sSciSlave.sVersion;
 }
 
 //=============================================================================
-teSCI_SLAVE_ERROR SCI_init(SCI_CALLBACKS callbacks, const VAR *p_varStruct, const COMMAND_CB *p_cmdStruct)
+teSCI_SLAVE_ERROR SCISlaveInit(tsSCI_SLAVE_CALLBACKS sCallbacks, const tsSCIVAR *pVarStruct, const COMMAND_CB *pCmdStruct)
 {
     // Initialize the callbacks
-    sSciSlave.varAccess.readEEPROM_cb                 = callbacks.readEEPROMCallback;
-    sSciSlave.varAccess.writeEEPROM_cb                = callbacks.writeEEPROMCallback;
-    sSciSlave.sDatalink.txBlockingCallback             = callbacks.transmitBlockingCallback;
-    sSciSlave.sDatalink.txNonBlockingCallback          = callbacks.transmitNonBlockingCallback;
-    sSciSlave.sDatalink.txGetBusyStateCallback         = callbacks.getTxBusyStateCallback;
+    sSciSlave.sVarAccess.cbReadEEPROM           = sCallbacks.cbReadEEPROM;
+    sSciSlave.sVarAccess.cbWriteEEPROM          = sCallbacks.cbWriteEEPROM;
+    sSciSlave.sDatalink.txBlockingCallback      = sCallbacks.cbTransmitBlocking;
+    sSciSlave.sDatalink.txNonBlockingCallback   = sCallbacks.cbTransmitNonBlocking;
+    sSciSlave.sDatalink.txGetBusyStateCallback  = sCallbacks.cbGetTxBusyState;
 
     // Hand over the pointers to the var and cmd structs
-    sSciSlave.varAccess.p_varStruct       = p_varStruct;
-    sSciSlave.sciCommands.p_cmdCBStruct   = p_cmdStruct;
+    sSciSlave.sVarAccess.pVarStruct       = pVarStruct;
+    sSciSlave.sSciTransfer.pCmdCBStruct   = pCmdStruct;
 
     // Configure data structures
     fifoBufInit(&sSciSlave.sRxFIFO, sSciSlave.ui8RxBuffer, RX_PACKET_LENGTH);
     fifoBufInit(&sSciSlave.sTxFIFO, sSciSlave.ui8TxBuffer, TX_PACKET_LENGTH);
 
     // Initialize the variable structure
-    return (initVarstruct(&sSciSlave.varAccess));
+    return (initVarstruct(&sSciSlave.sVarAccess));
 }
 
 //=============================================================================
-void SCI_receiveData(uint8_t ui8_data)
+void SCISlaveReceiveData (uint8_t ui8Data)
 {
     // Call the lower level datalink level functionality
-    receive(&sSciSlave.sDatalink, &sSciSlave.sRxFIFO, ui8_data);
+    receive(&sSciSlave.sDatalink, &sSciSlave.sRxFIFO, ui8Data);
 }
 
 
 //=============================================================================
-void SCI_statemachine(void)
+void SCISlaveStatemachine (void)
 {
     // Check the lower level datalink states and set the protocol state accordingly
     if (sSciSlave.e_state > ePROTOCOL_ERROR)
     {
         if (sSciSlave.e_state < ePROTOCOL_EVALUATING)
-            sSciSlave.e_state = (PROTOCOL_STATE)getDatalinkReceiveState(&sSciSlave.sDatalink);
+            sSciSlave.e_state = (tePROTOCOL_STATE)getDatalinkReceiveState(&sSciSlave.sDatalink);
         // else
         //     sSciSlave.e_state = sSciSlave.datalink.tState;
     }
@@ -96,41 +97,50 @@ void SCI_statemachine(void)
             break;
         case ePROTOCOL_EVALUATING:
             {
-                uint8_t *   pui8_buf;
-                COMMAND     cmd = COMMAND_DEFAULT;
-                RESPONSE    rsp = RESPONSE_DEFAULT; 
-                uint8_t     ui8_msgSize = readBuf(&sSciSlave.sRxFIFO, &pui8_buf);
+                uint8_t *   pui8Buf;
+                tsREQUEST    sReq = tsREQUEST_DEFAULTS;
+                tsRESPONSE   sRsp = tsRESPONSE_DEFAULTS; 
+                uint8_t     ui8_msgSize = readBuf(&sSciSlave.sRxFIFO, &pui8Buf);
                 teSCI_SLAVE_ERROR  eError = eSCI_ERROR_NONE;
 
                 // Clear Datalink State
                 acknowledgeRx(&sSciSlave.sDatalink);
 
                 // Parse the command (skip STX and don't care for ETX)
-                eError = commandParser(pui8_buf, ui8_msgSize, &cmd);
+                eError = SCISlaveRequestParser(pui8Buf, ui8_msgSize, &sReq);
 
                 // Take over command number and type
-                rsp.i16_num = cmd.i16_num;
-                rsp.e_cmdType = cmd.e_cmdType;
+                sRsp.i16Num = sReq.i16Num;
+                sRsp.eReqType = sReq.eReqType;
 
                 // Execute the command
                 if (eError == eSCI_ERROR_NONE)
-                    eError = executeCmd(&sSciSlave.sciCommands, &sSciSlave.varAccess, cmd, &rsp);
+                    eError = SCIProcessRequest(&sSciSlave.sSciTransfer, &sSciSlave.sVarAccess, sReq, &sRsp);
 
                 // If there was an SCI error, return the error number with offset
                 if(eError != eSCI_ERROR_NONE)
-                    rsp.info.ui16_error = GET_SCI_ERROR_NUMBER((uint16_t)eError);
+                    sRsp.sTransferData.ui16Error = GET_SCI_ERROR_NUMBER((uint16_t)eError);
 
 
                 flushBuf(&sSciSlave.sTxFIFO);
                 
                 // "Put" the date into the tx buffer
-                pui8_buf = sSciSlave.ui8TxBuffer;
-                increaseBufIdx(&sSciSlave.sTxFIFO, responseBuilder(pui8_buf, rsp));
-                // TODO: Error handling -> Message too long
+                pui8Buf = sSciSlave.ui8TxBuffer;
+                increaseBufIdx(&sSciSlave.sTxFIFO, SCISlaveResponseBuilder( pui8Buf,
+                                                                            sSciSlave.sSciTransfer.sResponseControl.ui8ControlBits.firstPacketNotSent,
+                                                                            sSciSlave.sSciTransfer.sResponseControl.ui8ControlBits.ongoing,
+                                                                            &sSciSlave.sSciTransfer.sResponseControl.ui32DataIdx,
+                                                                            &sRsp));
+
+                // Reset the ongoing flag when no data is left to transmit
+                if (sSciSlave.sSciTransfer.sResponseControl.sRsp.sTransferData.ui32DatLen == 0)
+                    clearResponseControl(&sSciSlave.sSciTransfer);
+
+                /// @todo Error handling -> Message too long
 
                 if (transmit(&sSciSlave.sDatalink, &sSciSlave.sTxFIFO))
                     sSciSlave.e_state = ePROTOCOL_SENDING;
-                // TODO: Error handling?
+                /// @todo Error handling?
                 else 
                     sSciSlave.e_state = ePROTOCOL_IDLE;  
             }
@@ -155,247 +165,7 @@ void SCI_statemachine(void)
 }
 
 //=============================================================================
-teSCI_SLAVE_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR* p_Var)
+teSCI_SLAVE_ERROR SCISlaveGetVarFromStruct(int16_t i16VarNum, tsSCIVAR* pVar)
 {
-    return getVar(&sSciSlave.varAccess, p_Var, i16_varNum);
-}
-
-//=============================================================================
-teSCI_SLAVE_ERROR commandParser(uint8_t* pui8_buf, uint8_t ui8_stringSize, COMMAND *pCmd)
-{
-    uint8_t i = 0;
-    uint32_t ui32_tmp;
-    // uint8_t cmdIdx  = 0;
-    // COMMAND cmd     = COMMAND_DEFAULT;
-
-    for (; i < ui8_stringSize; i++)
-    {
-
-        if (pui8_buf[i] == GETVAR_IDENTIFIER)
-        {
-            pCmd->e_cmdType = eCOMMAND_TYPE_GETVAR;
-            break;
-        }
-        else if (pui8_buf[i] == SETVAR_IDENTIFIER)
-        {
-            pCmd->e_cmdType = eCOMMAND_TYPE_SETVAR;
-            break;
-        }
-        else if (pui8_buf[i] == COMMAND_IDENTIFIER)
-        {
-            pCmd->e_cmdType = eCOMMAND_TYPE_COMMAND;
-            break;
-        }
-        else if (pui8_buf[i] == UPSTREAM_IDENTIFIER)
-        {
-            pCmd->e_cmdType = eCOMMAND_TYPE_UPSTREAM;
-            break;
-        }
-        else if (pui8_buf[i] == DOWNSTREAM_IDENTIFIER)
-        {
-            pCmd->e_cmdType = eCOMMAND_TYPE_DOWNSTREAM;
-            break;
-        }      
-    }
-
-    // No valid command identifier found (TODO: Error handling)
-    if (pCmd->e_cmdType == eCOMMAND_TYPE_NONE)
-        return eSCI_ERROR_COMMAND_IDENTIFIER_NOT_FOUND;
-    
-    /*******************************************************************************************
-     * Variable number conversion
-    *******************************************************************************************/
-    // Loop breaks when i reflects the buffer position of the command identifier
-    // Variable number conversion
-    {
-        // One additional character necessary for string termination
-        uint8_t *p_numStr = (uint8_t*)malloc(i+1);
-
-        // copy the number string into new array
-        memcpy(p_numStr,pui8_buf,i);
-        // Properly terminate string to use the atoi buildin
-        p_numStr[i] = '\0';
-        // Convert
-        #ifdef VALUE_MODE_HEX
-        if(!strToHex(p_numStr, &ui32_tmp))
-           return eSCI_ERROR_VARIABLE_NUMBER_CONVERSION_FAILED; 
-        pCmd->i16_num = *(int16_t*)(&ui32_tmp);
-        #else
-        pCmd->i16_num = (int16_t)(atoi((char*)p_numStr));
-        #endif
-
-        free(p_numStr);
-    }
-
-    /************************************s*******************************************************
-     * Variable value conversion
-    *******************************************************************************************/
-   // Only if a parameter has been passed
-   if (ui8_stringSize > i + 1)
-   {
-        uint8_t ui8_valStrLen = ui8_stringSize - i;
-        uint8_t j = 1;
-        uint8_t ui8_numOfVals = 0;
-        uint8_t ui8_valueLen = 0;
-        uint8_t *p_valStr = NULL;
-
-        while (ui8_numOfVals <= MAX_NUM_COMMAND_VALUES)
-        {
-            ui8_numOfVals++;
-
-            while (j < ui8_valStrLen)
-            {
-                // Value seperator found
-                if (pui8_buf[i + j] == ',')
-                    break;
-                
-                j++;
-                ui8_valueLen++;
-            }
-
-            p_valStr = (uint8_t*)malloc(ui8_valueLen + 1);
-
-            // copy the number string into new array
-            memcpy(p_valStr, &pui8_buf[i + j - ui8_valueLen], ui8_valueLen);
-
-            p_valStr[ui8_valueLen] = '\0';
-
-            #ifdef VALUE_MODE_HEX
-            if(!strToHex(p_valStr, &pCmd->valArr[ui8_numOfVals - 1].ui32_hex))
-                return eSCI_ERROR_COMMAND_VALUE_CONVERSION_FAILED;
-            #else
-            pCmd->valArr[ui8_numOfVals - 1].f_float = atof((char*)p_valStr);
-            #endif
-
-            free(p_valStr);
-
-            if (j == ui8_valStrLen)
-                break;
-            
-            ui8_valueLen = 0;
-            j++;
-        }
-        pCmd->ui8_valArrLen = ui8_numOfVals;
-    }
-
-    return eSCI_ERROR_NONE;
-}
-
-//=============================================================================
-uint8_t responseBuilder(uint8_t *pui8_buf, RESPONSE rsp)
-{
-    uint8_t ui8_size    = 0;
-
-    // Convert variable number to ASCII
-    #ifdef VALUE_MODE_HEX
-    ui8_size = (uint8_t)hexToStrWord(pui8_buf, (uint16_t*)&rsp.i16_num, true);
-    #else
-    ui8_size = ftoa(pui8_buf, (float)rsp.i16_num, true);
-    #endif
-
-    // Increase Buffer index and write command type identifier
-    pui8_buf += ui8_size;
-    *pui8_buf++ = cmdIdArr[rsp.e_cmdType];
-    ui8_size++;
-
-
-    if (!(rsp.e_cmdStatus == eCOMMAND_STATUS_ERROR || rsp.e_cmdStatus == eCOMMAND_STATUS_UNKNOWN))
-    {
-        switch (rsp.e_cmdType)
-        {
-            case eCOMMAND_TYPE_GETVAR:
-                // Fill the response designator
-                memcpy(pui8_buf, &responseDesignator[(uint8_t)eCOMMAND_STATUS_SUCCESS], 3);
-                pui8_buf+=3;
-                *pui8_buf++ = ';';
-                ui8_size += 4;
-                // Write the data value into the buffer
-                #ifdef VALUE_MODE_HEX
-                ui8_size += (uint8_t)hexToStrDword(pui8_buf, &rsp.val.ui32_hex, true);
-                #else
-                ui8_size += ftoa(pui8_buf, rsp.val.f_float, true);
-                #endif
-                break;
-            
-            case eCOMMAND_TYPE_SETVAR:
-                // If we got here, the operation was successful
-                memcpy(pui8_buf, &responseDesignator[(uint8_t)eCOMMAND_STATUS_SUCCESS], 3);
-                pui8_buf+=3;
-                ui8_size += 3;
-                break;
-
-            case eCOMMAND_TYPE_COMMAND:
-                // No response designator on every consecutive packet
-                if (sSciSlave.sciCommands.responseControl.ui8_controlBits.firstPacketNotSent)
-                {
-                    memcpy(pui8_buf, &responseDesignator[(uint8_t)rsp.e_cmdStatus], 3);
-                    pui8_buf+=3;
-                    ui8_size += 3;
-
-                    if (rsp.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_DATA ||rsp.e_cmdStatus == eCOMMAND_STATUS_SUCCESS_UPSTREAM)
-                    {
-                        uint8_t ui8_asciiSize;
-
-                        *pui8_buf++ = ';';
-                        ui8_size++;
-                        #ifdef VALUE_MODE_HEX
-                        ui8_asciiSize = (uint8_t)hexToStrDword(pui8_buf, &rsp.info.ui32_datLen, true);
-                        #else
-                        ui8_asciiSize = ftoa(pui8_buf, (float)rsp.info.ui32_datLen, true);
-                        #endif
-                        pui8_buf += ui8_asciiSize;
-                        ui8_size += ui8_asciiSize;
-                    }
-                }
-
-                // Fill the rest of the packet with data
-                if (sSciSlave.sciCommands.responseControl.ui8_controlBits.ongoing)
-                {
-                    if(sSciSlave.sciCommands.responseControl.ui8_controlBits.firstPacketNotSent)
-                    {
-                        *pui8_buf++ = ';';
-                        ui8_size++;
-                    }
-                    ui8_size += fillBufferWithValues(&sSciSlave.sciCommands, pui8_buf, TX_PACKET_LENGTH - ui8_size);
-                }
-
-                break;
-            
-            case eCOMMAND_TYPE_UPSTREAM:
-                // upstream is sent without command ID overhead
-                pui8_buf -= ui8_size;
-                ui8_size = 0;
-                ui8_size += fillBufferWithValues(&sSciSlave.sciCommands, pui8_buf, TX_PACKET_LENGTH);
-                break;
-
-            default:
-                break;
-        }
-    }
-    else
-    {
-        // We get here for example if there was no valid command identifier found
-        if (rsp.info.ui16_error == 0)
-        {
-            memcpy(pui8_buf, &responseDesignator[(uint8_t)eCOMMAND_STATUS_UNKNOWN], 3);
-            pui8_buf += 3;
-        }
-        else
-        {
-            memcpy(pui8_buf, &responseDesignator[(uint8_t)eCOMMAND_STATUS_ERROR], 3);
-            pui8_buf+=3;
-            *pui8_buf++ = ';';
-            ui8_size ++;
-            // Write the data value into the buffer
-            #ifdef VALUE_MODE_HEX
-            ui8_size += (uint8_t)hexToStrWord(pui8_buf, &rsp.info.ui16_error, true);
-            #else
-            ui8_size += ftoa(pui8_buf, (float)rsp.info.ui16_error, true);
-            #endif
-        }
-
-        ui8_size += 3;
-    }
-
-    return ui8_size;
+    return getVar(&sSciSlave.sVarAccess, pVar, i16VarNum);
 }

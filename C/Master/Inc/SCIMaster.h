@@ -10,6 +10,7 @@
  *
  * <b> History </b>
  * 	- 2022-11-17 - File creation -
+ *  - 2022-12-12 - Adapted code for unified master/slave repo structure.
  * 
  * <b> TODOs </b>
  * @todo Response Timeout
@@ -29,7 +30,7 @@
 extern "C" {
 #endif
 
-#include "SCITransfer.h"
+#include "SCIMasterTransfer.h"
 #include "Buffer.h"
 #include "SCIDataLink.h"
 #include "SCICommon.h"
@@ -44,25 +45,6 @@ extern "C" {
 /******************************************************************************
  * Type definitions
  *****************************************************************************/
-
-/** @brief SCI version data structure */
-typedef struct
-{
-    uint8_t ui8VersionMajor;
-    uint8_t ui8VersionMinor;
-    uint8_t ui8Revision;
-}tsSCI_MASTER_VERSION;
-
-#define tsSCI_MASTER_VERSION_VALUE {SCI_MASTER_VERSION_MAJOR, SCI_MASTER_VERSION_MINOR, SCI_MASTER_REVISION}
-
-typedef enum
-{
-    ePROTOCOL_ERROR         = -1,
-    ePROTOCOL_IDLE          = 0,
-    ePROTOCOL_SENDING       = 1,
-    ePROTOCOL_EVALUATING    = 2,
-    ePROTOCOL_RECEIVING     = 3,
-}tePROTOCOL_STATE;
 
 typedef teTRANSFER_ACK (*SETVAR_CB)(teREQUEST_ACKNOWLEDGE eAck, int16_t i16Num, uint16_t ui16ErrNum);
 typedef teTRANSFER_ACK (*GETVAR_CB)(teREQUEST_ACKNOWLEDGE eAck, int16_t i16Num, uint32_t ui32Data, uint16_t ui16ErrNum);

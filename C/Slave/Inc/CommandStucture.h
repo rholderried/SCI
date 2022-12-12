@@ -18,7 +18,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include "SCIconfig.h"
-#include "Variables.h"
 #include "SCITransferCommon.h"
 
 /******************************************************************************

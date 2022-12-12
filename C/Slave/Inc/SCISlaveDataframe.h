@@ -18,7 +18,6 @@
 #include <stdbool.h>
 
 #include "SCICommon.h"
-#include "SCITransfer.h"
 
 /******************************************************************************
  * Defines
@@ -37,7 +36,7 @@
  * @param ui8_stringSize    Length of the message string.
  * @returns COMMAND structure defining the command type and number
  */
-teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8_buf, uint8_t ui8_stringSize, COMMAND *pCmd);
+teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8Buf, uint8_t ui8StringSize, tsREQUEST *psReq);
 
 /** \brief Builds the response string.
  * 
@@ -48,7 +47,9 @@ teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8_buf, uint8_t ui8_stringSiz
  * @param response      Structure holding the response information.
  * @returns size of the generated message string.
  */
-uint8_t SCISlaveResponseBuilder(uint8_t *pui8_buf, RESPONSE response);
+uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, bool bFirstPacketNotSent, bool bOngoing, uint32_t *pui32DataIdx, tsRESPONSE *psRsp);
+
+uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, uint32_t *pui32DataIdx, tsRESPONSE *psRsp);
 
 
 #endif //_SCISLAVEDATAFRAME_H_

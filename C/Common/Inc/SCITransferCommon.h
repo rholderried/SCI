@@ -77,17 +77,17 @@ typedef struct
             uint8_t dataBufDynamic      : 1;
             uint8_t upstreamBufDynamic  : 1;
             uint8_t reserved            : 6;
-        }ui8_infoFlagBits;
+        }ui8InfoFlagBits;
 
-        uint8_t ui8_infoFlagByte;
+        uint8_t ui8InfoFlagByte;
     };
-    uint8_t  *pui8_upStreamBuf;
-    uint32_t *pui32_dataBuf;
-    uint32_t ui32_datLen;
-    uint16_t ui16_error;
+    uint8_t         *pui8UpStreamBuf;
+    tuRESPONSEVALUE *puRespVals;
+    uint32_t        ui32DatLen;
+    uint16_t        ui16Error;
 }tsTRANSFER_DATA;
 
-#define tsTRANSFER_DATA_DEFAULTS {{.ui8_infoFlagByte = 0}, NULL, NULL, 0, 0}
+#define tsTRANSFER_DATA_DEFAULTS {{.ui8InfoFlagByte = 0}, NULL, NULL, 0, 0}
 
 /** \brief REQUEST structure declaration.*/
 typedef struct
@@ -114,7 +114,7 @@ typedef struct
     // uint32_t                ui32DataLength;                     /*!< Whole length of the data to follow */
 }tsRESPONSE;
 
-#define RESPONSE_DEFAULT {  0,\
+#define tsRESPONSE_DEFAULTS {  0,\
                             eREQUEST_TYPE_NONE,\
                             eREQUEST_ACK_STATUS_UNKNOWN,\
                             tsTRANSFER_DATA_DEFAULTS}

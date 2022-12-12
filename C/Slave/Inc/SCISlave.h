@@ -22,8 +22,14 @@
  *****************************************************************************/
 #include <stdint.h>
 #include <stdbool.h>
-#include "SCICommands.h"
-#include "Variables.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "SCISlaveTransfer.h"
+#include "SCIVariables.h"
+#include "SCIVarAccess.h"
 #include "Buffer.h"
 #include "CommandStucture.h"
 #include "SCIDataLink.h"
@@ -38,44 +44,24 @@
  * Enum Type definitions
  *****************************************************************************/
 
-typedef enum
-{
-    ePROTOCOL_ERROR         = -1,
-    ePROTOCOL_IDLE          = 0,
-    ePROTOCOL_RECEIVING     = 1,
-    ePROTOCOL_EVALUATING    = 2,
-    ePROTOCOL_SENDING       = 3,
-}PROTOCOL_STATE;
-
-typedef enum
-{
-    eDEBUG_ACTIVATION_NONE,
-    eDEBUG_ACTIVATION_S1,
-    eDEBUG_ACTIVATION_S2,
-    eDEBUG_ACTIVATION_FINAL
-}DEBUG_ACTIVATION_STATE;
-
 /******************************************************************************
  * Structure Type definitions
  *****************************************************************************/
 
-
 typedef struct
 {
-    tsSCI_VERSION   sVersion;
-    PROTOCOL_STATE  e_state;    /*!< Actual protocol state. */
+    tsSCI_VERSION       sVersion;
+    tePROTOCOL_STATE    e_state;    /*!< Actual protocol state. */
 
-    uint8_t ui8RxBuffer[RX_PACKET_LENGTH];   /*!< RX buffer space. */ 
-    uint8_t ui8TxBuffer[TX_PACKET_LENGTH];   /*!< TX buffer space. */ 
+    uint8_t             ui8RxBuffer[RX_PACKET_LENGTH];   /*!< RX buffer space. */ 
+    uint8_t             ui8TxBuffer[TX_PACKET_LENGTH];   /*!< TX buffer space. */ 
 
-    tsFIFO_BUF      sRxFIFO;  /*!< RX buffer management. */ 
-    tsFIFO_BUF      sTxFIFO;  /*!< TX buffer management. */
+    tsFIFO_BUF          sRxFIFO;  /*!< RX buffer management. */ 
+    tsFIFO_BUF          sTxFIFO;  /*!< TX buffer management. */
 
-    tsDATALINK      sDatalink;
-    SCI_COMMANDS    sciCommands;   /*!< Commands variable structure. */
-    VAR_ACCESS      varAccess;     /*!< Variable structure access. */
-
-    // TX_CB       txCallback = nullptr;   /*!< Transmission callback function. */ 
+    tsDATALINK              sDatalink;
+    tsSCI_TRANSFER_SLAVE    sSciTransfer;   /*!< Commands variable structure. */
+    tsVAR_ACCESS            sVarAccess;      /*!< Variable structure access. */
 }tsSCI_SLAVE;
 
 #define tsSCI_SLAVE_DEFAULTS {  {SCI_VERSION_MAJOR, SCI_VERSION_MINOR, SCI_REVISION},\
@@ -84,17 +70,17 @@ typedef struct
                                 tsFIFO_BUF_DEFAULTS,\
                                 tsFIFO_BUF_DEFAULTS,\
                                 tsDATALINK_DEFAULTS,\
-                                SCI_COMMANDS_DEFAULT,\
-                                VAR_ACCESS_DEFAULT}
+                                tsSCI_TRANSFER_SLAVE_DEFAULTS,\
+                                tsVAR_ACCESS_DEFAULTS}
 
 typedef struct
 {
-    WRITEEEPROM_CB writeEEPROMCallback;             /*!< Callback for writing data into the EEPROM. */
-    READEEPROM_CB readEEPROMCallback;               /*!< Callback for reading data from the EEPROM. */
-    BLOCKING_TX_CB transmitBlockingCallback;        /*!< Callback for the data transmission driver. Blocking. */
-    NONBLOCKING_TX_CB transmitNonBlockingCallback;  /*!< Callback for the data transmission driver. Blocking. */
-    GET_BUSY_STATE_CB getTxBusyStateCallback;       /*!< Callback for polling the busy state of the transmitter. */
-}SCI_CALLBACKS;
+    WRITEEEPROM_CB cbWriteEEPROM;             /*!< Callback for writing data into the EEPROM. */
+    READEEPROM_CB cbReadEEPROM;               /*!< Callback for reading data from the EEPROM. */
+    BLOCKING_TX_CB cbTransmitBlocking;        /*!< Callback for the data transmission driver. Blocking. */
+    NONBLOCKING_TX_CB cbTransmitNonBlocking;  /*!< Callback for the data transmission driver. Blocking. */
+    GET_BUSY_STATE_CB cbGetTxBusyState;       /*!< Callback for polling the busy state of the transmitter. */
+}tsSCI_SLAVE_CALLBACKS;
 
 #define SCI_CALLBACKS_DEFAULT {NULL}
 
@@ -104,28 +90,33 @@ typedef struct
  * Function definitions
  *****************************************************************************/
 /** \brief Returns the version struct of SCI.*/
-tsSCI_VERSION SCI_GetVersion(void);
+tsSCI_VERSION SCISlaveGetVersion(void);
 
 /** \brief Initialize protocol functionality.*/
-teSCI_SLAVE_ERROR SCI_init(SCI_CALLBACKS callbacks, const VAR *p_varStruct, const COMMAND_CB *p_cmdStruct);
+teSCI_SLAVE_ERROR SCISlaveInit(tsSCI_SLAVE_CALLBACKS sCallbacks, const tsSCIVAR *pVarStruct, const COMMAND_CB *pCmdStruct);
 
 /** \brief Protocol state machine
  *
  * This function must be called in a cyclic manner for proper operation
  * of the serial protocol.
  */
-void SCI_statemachine   (void);
+void SCISlaveStatemachine (void);
 
 /** \brief Receive method.
  *
- * @param ui8_data  Received data byte to be processed within the proocol.
+ * @param ui8Data  Received data byte to be processed within the proocol.
  */
-void SCI_receiveData    (uint8_t ui8_data);
+void SCISlaveReceiveData (uint8_t ui8Data);
 
 /** \brief Get a single variable pointer from the variable structure.
  *
- * @param i16_varNum    Variable number of the desired variable.
- * @param p_Var         Pointer address to be set to the var struct variable.
+ * @param i16VarNum    Variable number of the desired variable.
+ * @param pVar         Pointer address to be set to the var struct variable.
  */
-teSCI_SLAVE_ERROR SCI_GetVarFromStruct(int16_t i16_varNum, VAR* p_Var);
+teSCI_SLAVE_ERROR SCISlaveGetVarFromStruct(int16_t i16VarNum, tsSCIVAR* pVar);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif //_SCI_SLAVE_H_

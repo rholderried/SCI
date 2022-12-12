@@ -1,16 +1,17 @@
 /**************************************************************************//**
- * \file SCITransfer.h
+ * \file SCIMasterTransfer.h
  * \author Roman Holderried
  *
  * \brief SCI transfer related declarations / definitions.
  *
  * <b> History </b>
  * 	- 2022-11-17 - File creation -
+ *  - 2022-12-12 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
 
-#ifndef _SCITRANSFER_H_
-#define _SCITRANSFER_H_
+#ifndef _SCIMASTERTRANSFER_H_
+#define _SCIMASTERTRANSFER_H_
 
 /******************************************************************************
  * Includes
@@ -48,11 +49,12 @@ typedef enum
 
 
 
-#define tsRESPONSE_DEFAULTS         {0, eREQUEST_TYPE_NONE, eREQUEST_ACK_STATUS_UNKNOWN, 0, {{.ui32_hex = 0}}, NULL, 0, 0}
+// #define tsRESPONSE_DEFAULTS         {0, eREQUEST_TYPE_NONE, eREQUEST_ACK_STATUS_UNKNOWN, 0, {{.ui32_hex = 0}}, NULL, 0, 0}
 
 typedef struct
 {
     tsREQUEST       sReq;
+    uint8_t         ui8MessageDataCnt;
     uint32_t        ui32ExpectedDataCnt;
     uint32_t        ui32ReceivedDataCnt;
     uint32_t        ui32TransferCnt;
@@ -60,7 +62,7 @@ typedef struct
     uint8_t         *pui8UpstreamBuffer;
 }tsTRANSFER_INFO;
 
-#define tsTRANSFER_INFO_DEFAULTS {tsREQUEST_DEFAULTS, 0, 0, 0, NULL, NULL}
+#define tsTRANSFER_INFO_DEFAULTS {tsREQUEST_DEFAULTS, 0, 0, 0, 0, NULL, NULL}
 
 typedef struct
 {
@@ -112,4 +114,4 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp);
 
 
 
-#endif //_SCITRANSFER_H_
+#endif //_SCIMASTERTRANSFER_H_

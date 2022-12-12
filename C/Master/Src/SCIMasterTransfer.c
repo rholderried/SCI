@@ -1,11 +1,12 @@
 /**************************************************************************//**
- * \file SCITransfer.c
+ * \file SCIMasterTransfer.c
  * \author Roman Holderried
  *
- * \brief Transfer control functions
+ * \brief Transfer control functions for the master module
  *
  * <b> History </b>
  * 	- 2022-11-21 - File creation 
+ *  - 2022-12-11 - Adapted code for unified master/slave repo structure.
  * 
  * TODOs:
  * ======
@@ -22,7 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "SCITransfer.h"
+#include "SCIMasterTransfer.h"
 
 /******************************************************************************
  * Global variable definition
@@ -56,7 +57,7 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
         case eREQUEST_TYPE_SETVAR:
             if (psSciTransfer->sCallbacks.GetVarCB != NULL)
             {
-                eTransferAck = psSciTransfer->sCallbacks.SetVarCB(sRsp.eReqAck, sRsp.i16Num, sRsp.ui16ErrNum);
+                eTransferAck = psSciTransfer->sCallbacks.SetVarCB(sRsp.eReqAck, sRsp.i16Num, sRsp.sTransferData.ui16Error);
             }
 
             if (eTransferAck != eTRANSFER_ACK_REPEAT_REQUEST)
@@ -68,7 +69,7 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
         case eREQUEST_TYPE_GETVAR:
             if (psSciTransfer->sCallbacks.GetVarCB != NULL)
             {
-                eTransferAck = psSciTransfer->sCallbacks.GetVarCB(sRsp.eReqAck, sRsp.i16Num, sRsp.uValArr[0].ui32_hex, sRsp.ui16ErrNum);
+                eTransferAck = psSciTransfer->sCallbacks.GetVarCB(sRsp.eReqAck, sRsp.i16Num, sRsp.sTransferData.puRespVals[0].ui32_hex, sRsp.sTransferData.ui16Error);
             }
 
             if (eTransferAck != eTRANSFER_ACK_REPEAT_REQUEST)
@@ -88,7 +89,7 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
                     // In first message
                     if (psSciTransfer->sTransferInfo.ui32TransferCnt == 0)
                     {
-                        psSciTransfer->sTransferInfo.ui32ExpectedDataCnt = sRsp.ui32DataLength;
+                        psSciTransfer->sTransferInfo.ui32ExpectedDataCnt = sRsp.sTransferData.ui32DatLen;
 
                         // Allocate the memory for the COMMAND results
                         psSciTransfer->sTransferInfo.uTransferResults = malloc(psSciTransfer->sTransferInfo.ui32ExpectedDataCnt * sizeof(tuRESPONSEVALUE));
@@ -100,10 +101,10 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
 
                     // Copy buffer values into the transfer memory
                     memcpy(&psSciTransfer->sTransferInfo.uTransferResults[psSciTransfer->sTransferInfo.ui32ReceivedDataCnt], 
-                            sRsp.uValArr, 
-                            sRsp.ui8ResponseDataLength * sizeof(tuRESPONSEVALUE));
+                            sRsp.sTransferData.puRespVals, 
+                            sRsp.sTransferData.ui32DatLen * sizeof(tuRESPONSEVALUE));
 
-                    psSciTransfer->sTransferInfo.ui32ReceivedDataCnt += sRsp.ui8ResponseDataLength;
+                    psSciTransfer->sTransferInfo.ui32ReceivedDataCnt += psSciTransfer->sTransferInfo.ui8MessageDataCnt;
 
                     // Increment number of COMMAND transfers
                     psSciTransfer->sTransferInfo.ui32TransferCnt++;
@@ -115,7 +116,7 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
                         // Callback invocation
                         if (psSciTransfer->sCallbacks.CommandCB != NULL)
                         {
-                            eTransferAck = psSciTransfer->sCallbacks.CommandCB(sRsp.eReqAck, sRsp.i16Num, &psSciTransfer->sTransferInfo.uTransferResults[0].ui32_hex, psSciTransfer->sTransferInfo.ui32ReceivedDataCnt, sRsp.ui16ErrNum);
+                            eTransferAck = psSciTransfer->sCallbacks.CommandCB(sRsp.eReqAck, sRsp.i16Num, &psSciTransfer->sTransferInfo.uTransferResults[0].ui32_hex, psSciTransfer->sTransferInfo.ui32ReceivedDataCnt, sRsp.sTransferData.ui16Error);
                         }
 
                         // Free data memory
@@ -125,6 +126,7 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
                         psSciTransfer->sTransferInfo.ui32ReceivedDataCnt = 0;
                         psSciTransfer->sTransferInfo.ui32TransferCnt = 0;
                         psSciTransfer->sTransferInfo.ui32ExpectedDataCnt = 0;
+                        psSciTransfer->sTransferInfo.ui8MessageDataCnt = 0;
 
                         if (eTransferAck != eTRANSFER_ACK_REPEAT_REQUEST)
                             psSciTransfer->sCallbacks.ReleaseProtocolCB();
@@ -148,13 +150,13 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
                     tsREQUEST sUpstreamRequest = tsREQUEST_DEFAULTS;
 
                     // Allocate memory for the upstream data
-                    psSciTransfer->sTransferInfo.pui8UpstreamBuffer = malloc(sRsp.ui32DataLength);
+                    psSciTransfer->sTransferInfo.pui8UpstreamBuffer = malloc(sRsp.sTransferData.ui32DatLen);
 
                     // TODO: What to do if memory allocation failed?
                     if (psSciTransfer->sTransferInfo.pui8UpstreamBuffer == NULL)
                         return false;
 
-                    psSciTransfer->sTransferInfo.ui32ExpectedDataCnt = sRsp.ui32DataLength;
+                    psSciTransfer->sTransferInfo.ui32ExpectedDataCnt = sRsp.sTransferData.ui32DatLen;
 
                     // Switch the receive mode to stream
                     psSciTransfer->sCallbacks.InitiateStreamCB(psSciTransfer->sTransferInfo.ui32ExpectedDataCnt);
@@ -176,7 +178,7 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
                 default:
                     if (psSciTransfer->sCallbacks.CommandCB != NULL)
                     {
-                        eTransferAck = psSciTransfer->sCallbacks.CommandCB(sRsp.eReqAck, sRsp.i16Num, NULL, 0, sRsp.ui16ErrNum);
+                        eTransferAck = psSciTransfer->sCallbacks.CommandCB(sRsp.eReqAck, sRsp.i16Num, NULL, 0, sRsp.sTransferData.ui16Error);
                     }
                     
                     psSciTransfer->sCallbacks.ReleaseProtocolCB();
@@ -190,9 +192,9 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
 
             // Copy transfer data from receive buffer into upstream memory
             memcpy(&psSciTransfer->sTransferInfo.pui8UpstreamBuffer[psSciTransfer->sTransferInfo.ui32ReceivedDataCnt], 
-                    sRsp.pui8Raw, sRsp.ui8ResponseDataLength);
+                    sRsp.sTransferData.pui8UpStreamBuf, psSciTransfer->sTransferInfo.ui8MessageDataCnt);
             
-            psSciTransfer->sTransferInfo.ui32ReceivedDataCnt += sRsp.ui8ResponseDataLength;
+            psSciTransfer->sTransferInfo.ui32ReceivedDataCnt += psSciTransfer->sTransferInfo.ui8MessageDataCnt;
 
             // There is additional data to transfer
             if (psSciTransfer->sTransferInfo.ui32ReceivedDataCnt < psSciTransfer->sTransferInfo.ui32ExpectedDataCnt)
