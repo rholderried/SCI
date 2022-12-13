@@ -46,11 +46,11 @@ void SCIDataLinkReceiveTransfer(tsDATALINK *p_inst, tsFIFO_BUF *p_rBuf, uint8_t 
             p_inst->rState = eDATALINK_RSTATE_PENDING;
             // rxBuffer.putElem(ui8_data);
         }
-        else
-        // TODO: Error handling
-        {
-            p_inst->rState = eDATALINK_RSTATE_IDLE;
-        }
+        // else
+        // // TODO: Error handling
+        // {
+        //     p_inst->rState = eDATALINK_RSTATE_IDLE;
+        // }
     }
     else if (p_inst->rState == eDATALINK_RSTATE_BUSY)
     {

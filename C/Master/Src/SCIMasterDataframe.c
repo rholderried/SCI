@@ -89,12 +89,12 @@ teSCI_MASTER_ERROR SCIMasterRequestBuilder(uint8_t *pui8Buf, uint8_t *pui8Size, 
             // Ignore the last comma
             (*pui8Size)--;
 
-            return eSCI_ERROR_MESSAGE_EXCEEDS_TX_BUFFER_SIZE;
+            return eSCI_MASTER_ERROR_MESSAGE_EXCEEDS_TX_BUFFER_SIZE;
         }
 
     }
 
-    return eSCI_ERROR_NONE;
+    return eSCI_MASTER_ERROR_NONE;
 }
 
 //=============================================================================
@@ -141,7 +141,7 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
 
     // No valid command identifier found (TODO: Error handling)
     if (psRsp->eReqType == eREQUEST_TYPE_NONE)
-        return eSCI_ERROR_REQUEST_IDENTIFIER_NOT_FOUND;
+        return eSCI_MASTER_ERROR_REQUEST_IDENTIFIER_NOT_FOUND;
     
     /*******************************************************************************************
      * Command Number Conversion
@@ -160,7 +160,7 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
         // Convert
         #ifdef VALUE_MODE_HEX
         if(!strToHex(pui8NumStr, &ui32_tmp))
-           return eSCI_ERROR_NUMBER_CONVERSION_FAILED; 
+           return eSCI_MASTER_ERROR_NUMBER_CONVERSION_FAILED; 
         psRsp->i16Num = *(int16_t*)(&ui32_tmp);
         #else
         psRsp->i16Num = (int16_t)(atoi((char*)pui8NumStr));
@@ -190,7 +190,7 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
 
     // Message could be complete here (COMMAND without results)
     if (i16BytesToGo <= 0)
-        return eSCI_ERROR_NONE;
+        return eSCI_MASTER_ERROR_NONE;
 
     // Get the control number after the acknowledge (Which can only happen if there is an acknowledge in the message)
     if (i8Ack >= 0)
@@ -213,7 +213,7 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
 
         #ifdef VALUE_MODE_HEX
         if(!strToHex(pui8NumStr, &uNum.ui32_hex))
-            return eSCI_ERROR_PARAMETER_CONVERSION_FAILED; 
+            return eSCI_MASTER_ERROR_PARAMETER_CONVERSION_FAILED; 
         #else
             uNum.f_float = atof((char*)pui8NumStr);
         #endif
@@ -299,7 +299,7 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
 
             #ifdef VALUE_MODE_HEX
             if(!strToHex(p_valStr, &psRsp->sTransferData.puRespVals[ui8_numOfVals - 1].ui32_hex))
-                return eSCI_ERROR_PARAMETER_CONVERSION_FAILED;
+                return eSCI_MASTER_ERROR_PARAMETER_CONVERSION_FAILED;
             #else
             psRsp->sTransferData.puRespVals[ui8_numOfVals - 1].f_float = atof((char*)p_valStr);
             #endif
@@ -315,10 +315,10 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
         *pui8MsgDataLen = ui8_numOfVals;
 
         // if (ui8_numOfVals != psRsp->sTransferData.ui32DatLen)
-        //     return eSCI_ERROR_EXPECTED_DATALENGTH_NOT_MET;
+        //     return eSCI_MASTER_ERROR_EXPECTED_DATALENGTH_NOT_MET;
     }
 
-    return eSCI_ERROR_NONE;
+    return eSCI_MASTER_ERROR_NONE;
 }
 
 //=============================================================================
@@ -328,7 +328,7 @@ teSCI_MASTER_ERROR SCIMasterStreamParser(uint8_t* pui8Buf, uint8_t ui8DataframeL
     *pui8MsgDataLen = ui8DataframeLen;
     psRsp->sTransferData.pui8UpStreamBuf = pui8Buf;
 
-    return eSCI_ERROR_NONE;
+    return eSCI_MASTER_ERROR_NONE;
 }
 
 //=============================================================================

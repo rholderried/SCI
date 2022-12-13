@@ -44,8 +44,7 @@
 typedef bool(*WRITEEEPROM_CB)(uint32_t ui32Val, uint16_t ui16Address);
 /** \brief EEPROM read user callback.*/
 typedef bool(*READEEPROM_CB)(uint32_t *ui32Val, uint16_t ui16Address);
-/** \brief Action procedure declaration for a setVar operation.*/
-typedef void(*ACTION_PROCEDURE)(void);
+
 
 typedef struct
 {
@@ -54,16 +53,6 @@ typedef struct
 }tsEEPROM_PARTITION_INFO;
 
 #define tsEEPROM_PARTITION_INFO_DEFAULTS {0,0}
-
-/** \brief Variable struct member declaration.*/
-typedef struct
-{
-    void        *pVal;       /*!< Pointer to the RAM variable the structure item links to.*/
-    teVARTYPE   eVartype;    /*!< Storage type of the variable (RAM or EEPROM).*/
-    teDTYPE     eDatatype;   /*!< Datatype of the linked variable.*/
-
-    ACTION_PROCEDURE ap;
-}tsSCIVAR;
 
 #define VAR_DEFAULT {NULL, eVARTYPE_NONE, eDTYPE_UINT8, NULL}
 

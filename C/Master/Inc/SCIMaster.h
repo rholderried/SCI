@@ -46,18 +46,18 @@ extern "C" {
  * Type definitions
  *****************************************************************************/
 
-typedef teTRANSFER_ACK (*SETVAR_CB)(teREQUEST_ACKNOWLEDGE eAck, int16_t i16Num, uint16_t ui16ErrNum);
-typedef teTRANSFER_ACK (*GETVAR_CB)(teREQUEST_ACKNOWLEDGE eAck, int16_t i16Num, uint32_t ui32Data, uint16_t ui16ErrNum);
-typedef teTRANSFER_ACK (*COMMAND_CB)(teREQUEST_ACKNOWLEDGE eAck, int16_t i16Num, uint32_t *pui32Data, uint8_t ui8DataCnt, uint16_t ui16ErrNum);
-typedef teTRANSFER_ACK (*UPSTREAM_CB)(int16_t i16Num, uint8_t *pui8Data, uint32_t ui32ByteCnt);
+typedef teTRANSFER_ACK (*MASTER_SETVAR_CB)(teREQUEST_ACKNOWLEDGE eAck, int16_t i16Num, uint16_t ui16ErrNum);
+typedef teTRANSFER_ACK (*MASTER_GETVAR_CB)(teREQUEST_ACKNOWLEDGE eAck, int16_t i16Num, uint32_t ui32Data, uint16_t ui16ErrNum);
+typedef teTRANSFER_ACK (*MASTER_COMMAND_CB)(teREQUEST_ACKNOWLEDGE eAck, int16_t i16Num, uint32_t *pui32Data, uint8_t ui8DataCnt, uint16_t ui16ErrNum);
+typedef teTRANSFER_ACK (*MASTER_UPSTREAM_CB)(int16_t i16Num, uint8_t *pui8Data, uint32_t ui32ByteCnt);
 
 typedef struct
 {
     // Result external callbacks
-    SETVAR_CB SetVarExternalCB;
-    GETVAR_CB GetVarExternalCB;
-    COMMAND_CB CommandExternalCB;
-    UPSTREAM_CB UpstreamExternalCB;
+    MASTER_SETVAR_CB SetVarExternalCB;
+    MASTER_GETVAR_CB GetVarExternalCB;
+    MASTER_COMMAND_CB CommandExternalCB;
+    MASTER_UPSTREAM_CB UpstreamExternalCB;
 
     // Transmission related external callbacks
     void        (*BlockingTxExternalCB)(uint8_t* pui8Buf, uint8_t ui8Len);
@@ -129,7 +129,7 @@ void SCIMasterSM (void);
  * @param pui8RecBuf    Pointer to the receive buffer or FIFO
  * @param ui8ByteCount  Number of bytes to process
 */
-void SCIReceive (uint8_t *pui8RecBuf, uint16_t ui8ByteCount);
+void SCIMasterReceiveData (uint8_t *pui8RecBuf, uint16_t ui8ByteCount);
 
 /** \brief Switch the receive mode of the protocol.
  * 

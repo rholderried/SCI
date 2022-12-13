@@ -23,7 +23,7 @@
 /******************************************************************************
  * Global variables definitions
  *****************************************************************************/
-extern const uint8_t ui8_byteLength[];
+static const uint8_t ui8ByteLength[7] = {1,1,2,2,4,4,4};
 
 /******************************************************************************
  * Function definitions
@@ -34,7 +34,7 @@ teSCI_SLAVE_ERROR InitVarstruct(tsVAR_ACCESS* pVarAccess)
     uint16_t    ui16_currentEEVarAddress = ADDRESS_OFFET;
     uint8_t     ui8_incrementor = 0;
     uint8_t     ui8_actualEEIdx = 0;
-    teSCI_SLAVE_ERROR  eError = eSCI_ERROR_NONE;
+    teSCI_SLAVE_ERROR  eError = eSCI_SLAVE_ERROR_NONE;
 
     for (uint8_t i = 0; i < SIZE_OF_VAR_STRUCT; i++)
     {
@@ -42,7 +42,7 @@ teSCI_SLAVE_ERROR InitVarstruct(tsVAR_ACCESS* pVarAccess)
         {
             // Check if there is enough space in the address table
             if (ui8_actualEEIdx == MAX_NUMBER_OF_EEPROM_VARS)
-                return eSCI_ERROR_EEPROM_PARTITION_TABLE_NOT_SUFFICIENT;
+                return eSCI_SLAVE_ERROR_EEPROM_PARTITION_TABLE_NOT_SUFFICIENT;
 
             pVarAccess->eepromPartitionTable[ui8_actualEEIdx].ui8Idx = i;
             pVarAccess->eepromPartitionTable[ui8_actualEEIdx].ui16Address = ui16_currentEEVarAddress;
@@ -53,10 +53,10 @@ teSCI_SLAVE_ERROR InitVarstruct(tsVAR_ACCESS* pVarAccess)
 
             // We ignore EEPROM read errors and keep the default value of the RAM variable
             // To enable write Access, we establish the EEPROM partition table anyways.
-            // if (eError != eSCI_ERROR_NONE)
+            // if (eError != eSCI_SLAVE_ERROR_NONE)
             //     return eError;
 
-            ui8_incrementor = ui8_byteLength[pVarAccess->pVarStruct[i].eDatatype] / EEPROM_ADDRESSTYPE;
+            ui8_incrementor = ui8ByteLength[pVarAccess->pVarStruct[i].eDatatype] / EEPROM_ADDRESSTYPE;
             ui16_currentEEVarAddress += ui8_incrementor > 0 ? ui8_incrementor : 1;
         }
     }
@@ -131,7 +131,7 @@ teSCI_SLAVE_ERROR ReadValFromVarStruct(tsVAR_ACCESS* pVarAccess, int16_t i16VarN
                 break;
 
             default:
-                return eSCI_ERROR_UNKNOWN_DATATYPE;
+                return eSCI_SLAVE_ERROR_UNKNOWN_DATATYPE;
 
         }
 
@@ -139,10 +139,10 @@ teSCI_SLAVE_ERROR ReadValFromVarStruct(tsVAR_ACCESS* pVarAccess, int16_t i16VarN
         *pfVal = ret.fVal;
         #endif
 
-        return eSCI_ERROR_NONE;
+        return eSCI_SLAVE_ERROR_NONE;
     }
     else
-        return eSCI_ERROR_VAR_NUMBER_INVALID;
+        return eSCI_SLAVE_ERROR_VAR_NUMBER_INVALID;
 }
 
 //=============================================================================
@@ -216,13 +216,13 @@ teSCI_SLAVE_ERROR WriteValToVarStruct(tsVAR_ACCESS* pVarAccess, int16_t i16VarNu
                 break;
 
             default:
-                return eSCI_ERROR_UNKNOWN_DATATYPE;
+                return eSCI_SLAVE_ERROR_UNKNOWN_DATATYPE;
         }
 
-        return eSCI_ERROR_NONE;
+        return eSCI_SLAVE_ERROR_NONE;
     }
     else
-        return eSCI_ERROR_VAR_NUMBER_INVALID;
+        return eSCI_SLAVE_ERROR_VAR_NUMBER_INVALID;
 }
 
 //=============================================================================
@@ -249,7 +249,7 @@ teSCI_SLAVE_ERROR ReadEEPROMValueIntoVarStruct(tsVAR_ACCESS* pVarAccess, int16_t
     if (pVarAccess->pVarStruct[i16VarNum - 1].eVartype == eVARTYPE_EEPROM && pVarAccess->cbReadEEPROM != NULL)
     {
         // Determine how many EEPROM reads have to be accomplished
-        ui8_numberOfIncs = ui8_byteLength[pVarAccess->pVarStruct[i16VarNum - 1].eDatatype]/EEPROM_ADDRESSTYPE;
+        ui8_numberOfIncs = ui8ByteLength[pVarAccess->pVarStruct[i16VarNum - 1].eDatatype]/EEPROM_ADDRESSTYPE;
         ui8_numberOfIncs = ui8_numberOfIncs > 0 ? ui8_numberOfIncs : 1;
 
 
@@ -257,7 +257,7 @@ teSCI_SLAVE_ERROR ReadEEPROMValueIntoVarStruct(tsVAR_ACCESS* pVarAccess, int16_t
         ui16_eepromAddress = GetEEPROMAddress(pVarAccess, i16VarNum);
 
         if(ui16_eepromAddress == EEEPROM_ADDRESS_ILLEGAL)
-            return eSCI_ERROR_EEPROM_ADDRESS_UNKNOWN;
+            return eSCI_SLAVE_ERROR_EEPROM_ADDRESS_UNKNOWN;
 ;
 
         for (uint8_t i = 0; i < ui8_numberOfIncs; i++)
@@ -265,7 +265,7 @@ teSCI_SLAVE_ERROR ReadEEPROMValueIntoVarStruct(tsVAR_ACCESS* pVarAccess, int16_t
             successIndicator &= pVarAccess->cbReadEEPROM(&ui32_tmp, ui16_eepromAddress + i);
 
             if (!successIndicator)
-               return eSCI_ERROR_EEPROM_READOUT_FAILED;
+               return eSCI_SLAVE_ERROR_EEPROM_READOUT_FAILED;
             
             ui32_tmp <<= (i * EEPROM_ADDRESSTYPE * 8);
             u_tmp.ui32Val |= ui32_tmp;
@@ -297,11 +297,11 @@ teSCI_SLAVE_ERROR ReadEEPROMValueIntoVarStruct(tsVAR_ACCESS* pVarAccess, int16_t
                 *(float*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal) = u_tmp.fVal;
                 break;
             default:
-                return eSCI_ERROR_UNKNOWN_DATATYPE;
+                return eSCI_SLAVE_ERROR_UNKNOWN_DATATYPE;
         }
     }
 
-    return eSCI_ERROR_NONE;
+    return eSCI_SLAVE_ERROR_NONE;
 }
 
 //=============================================================================
@@ -330,7 +330,7 @@ teSCI_SLAVE_ERROR WriteEEPROMwithValueFromVarStruct(tsVAR_ACCESS* pVarAccess, in
         ui16_eepromAddress = GetEEPROMAddress(pVarAccess, i16VarNum);
 
         if(ui16_eepromAddress == EEEPROM_ADDRESS_ILLEGAL)
-            return eSCI_ERROR_EEPROM_ADDRESS_UNKNOWN;
+            return eSCI_SLAVE_ERROR_EEPROM_ADDRESS_UNKNOWN;
 
         // Read data from the data structure
         switch(pVarAccess->pVarStruct[i16VarNum - 1].eDatatype)
@@ -357,11 +357,11 @@ teSCI_SLAVE_ERROR WriteEEPROMwithValueFromVarStruct(tsVAR_ACCESS* pVarAccess, in
                 u_tmp.fVal = *(float*)(pVarAccess->pVarStruct[i16VarNum - 1].pVal);
                 break;
             default:
-                return eSCI_ERROR_UNKNOWN_DATATYPE;
+                return eSCI_SLAVE_ERROR_UNKNOWN_DATATYPE;
         }
 
         // Determine how many EEPROM reads have to be accomplished
-        ui8_numberOfIncs = ui8_byteLength[pVarAccess->pVarStruct[i16VarNum - 1].eDatatype]/EEPROM_ADDRESSTYPE;
+        ui8_numberOfIncs = ui8ByteLength[pVarAccess->pVarStruct[i16VarNum - 1].eDatatype]/EEPROM_ADDRESSTYPE;
         ui8_numberOfIncs = ui8_numberOfIncs > 0 ? ui8_numberOfIncs : 1;
 
         // Generate the bit mask
@@ -379,11 +379,11 @@ teSCI_SLAVE_ERROR WriteEEPROMwithValueFromVarStruct(tsVAR_ACCESS* pVarAccess, in
             successIndicator &= pVarAccess->cbWriteEEPROM(ui32_tmp, ui16_eepromAddress + (i - 1));
 
             if (!successIndicator)
-                return eSCI_ERROR_EEPROM_WRITE_FAILED;
+                return eSCI_SLAVE_ERROR_EEPROM_WRITE_FAILED;
         }
     }
 
-    return eSCI_ERROR_NONE;
+    return eSCI_SLAVE_ERROR_NONE;
 }
 
 //=============================================================================
@@ -412,8 +412,8 @@ teSCI_SLAVE_ERROR GetVar(tsVAR_ACCESS* pVarAccess, tsSCIVAR* pVar, int16_t i16Va
     if ((i16VarNum > 0 && i16VarNum))    
     {
         *pVar = pVarAccess->pVarStruct[i16VarNum - 1];
-        return eSCI_ERROR_NONE;
+        return eSCI_SLAVE_ERROR_NONE;
     }
     
-    return eSCI_ERROR_VAR_NUMBER_INVALID;
+    return eSCI_SLAVE_ERROR_VAR_NUMBER_INVALID;
 }

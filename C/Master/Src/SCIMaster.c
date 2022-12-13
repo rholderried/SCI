@@ -61,7 +61,7 @@ void SCIMasterInit (tsSCI_MASTER_CALLBACKS sCallbacks)
 //=============================================================================
 void SCIMasterSM (void)
 {
-    teSCI_MASTER_ERROR eError = eSCI_ERROR_NONE;
+    teSCI_MASTER_ERROR eError = eSCI_MASTER_ERROR_NONE;
 
     switch (sSciMaster.eProtocolState)
     {
@@ -124,7 +124,7 @@ void SCIMasterSM (void)
 }
 
 //=============================================================================
-void SCIReceive (uint8_t *pui8RecBuf, uint16_t ui16ByteCount)
+void SCIMasterReceiveData (uint8_t *pui8RecBuf, uint16_t ui16ByteCount)
 {
     uint8_t i = 0;
 
@@ -168,7 +168,7 @@ bool SCIInitiateRequest (tsREQUEST sReq)
     flushBuf(&sSciMaster.sTxFIFO);
 
     // Assemble message
-    if (SCIMasterRequestBuilder(sSciMaster.sTxFIFO.pui8_bufPtr, &ui8Size, sReq) == eSCI_ERROR_NONE)
+    if (SCIMasterRequestBuilder(sSciMaster.sTxFIFO.pui8_bufPtr, &ui8Size, sReq) == eSCI_MASTER_ERROR_NONE)
     {
         increaseBufIdx(&sSciMaster.sTxFIFO, ui8Size);
 

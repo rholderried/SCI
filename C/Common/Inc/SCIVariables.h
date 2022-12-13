@@ -47,4 +47,17 @@ typedef enum
     eDTYPE_F32    = 6
 }teDTYPE;
 
+/** \brief Action procedure declaration for a setVar operation.*/
+typedef void(*ACTION_PROCEDURE)(void);
+
+/** \brief Info struct of a SCI Variable struct member.*/
+typedef struct
+{
+    void        *pVal;       /*!< Pointer to the RAM variable the structure item links to.*/
+    teVARTYPE   eVartype;    /*!< Storage type of the variable (RAM or EEPROM).*/
+    teDTYPE     eDatatype;   /*!< Datatype of the linked variable.*/
+
+    ACTION_PROCEDURE ap;
+}tsSCIVAR;
+
 #endif //_SCIVARIABLES_H_

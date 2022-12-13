@@ -1,22 +1,59 @@
 #include <stdio.h>
-#include "SCI.h"
-#include "Variables.h"
-#include "TestHelpers.h"
-#include "TestSCI.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <unity.h>
+#include "SCISlave.h"
+#include "SCIMaster.h"
 
-bool testTxCb(uint8_t* p_buf, uint8_t size)
+/******************************************************************************
+ * Defines
+ *****************************************************************************/
+#define NUMBER_OF_LOOPS 100
+
+/******************************************************************************
+ * External Globals
+ *****************************************************************************/
+extern tsSCIVAR varStruct;
+extern COMMAND_CB cmdStruct;
+extern tsSCI_SLAVE_CALLBACKS sSlaveTestCbs;
+extern char cTxMsgBuf[];
+extern char cRxMsgBuf[];
+
+void setUp(void)
+{}
+
+void tearDown(void)
+{}
+
+void test_SCISlavePollVar1 (void)
 {
-    p_buf[size] = '\0';
-    printf((const char*)p_buf);
+    uint8_t ui8Msg[] = {0x02, '1', '?', 0x03};
+    uint8_t ui8AnsExp[]= {0x02, '1', '?', 'F', '5' ,0x03};
+    uint8_t ui8MsgIdx = 0;
+    uint8_t j = 0;
 
-    return true;
+    for(uint8_t i = 0; i < NUMBER_OF_LOOPS; i++)
+    {
+
+        if (j < sizeof(ui8Msg))
+        {
+            SCISlaveReceiveData(ui8Msg[j]);
+            j++;
+        }
+
+        SCISlaveStatemachine();
+    }
+    TEST_ASSERT_EQUAL_CHAR_ARRAY(ui8AnsExp,cTxMsgBuf, sizeof(ui8AnsExp));
 }
 
 int main (void)
 {
-    // Test Helpers
-    //TestHelpers_hexToStr(0x12345678);
-    //TestHelpers_strToHex();
-    TestSCI_generateReads();
-    return 0;
+    UNITY_BEGIN();
+
+    SCISlaveInit(sSlaveTestCbs, &varStruct, &cmdStruct);
+
+    RUN_TEST(test_SCISlavePollVar1);
+
+    
+    return UNITY_END();
 }

@@ -38,7 +38,7 @@ extern const uint8_t ui8_byteLength[];
 teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCESS *pVarAccess, tsREQUEST sReq, tsRESPONSE *psRsp)
 {
     // RESPONSE rsp = RESPONSE_DEFAULT;
-    teSCI_SLAVE_ERROR eError = eSCI_ERROR_NONE;
+    teSCI_SLAVE_ERROR eError = eSCI_SLAVE_ERROR_NONE;
 
     // This is done outside of this method now
     // psRsp->i16Num         = sReq.i16Num;
@@ -55,13 +55,13 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
                 if (pVarAccess->pVarStruct[sReq.i16Num - 1].eVartype == eVARTYPE_EEPROM)
                 {
                     // If conditions are met, EEPROM read must be successful.
-                    eError = readEEPROMValueIntoVarStruct(pVarAccess, sReq.i16Num);
-                    if (eError != eSCI_ERROR_NONE)
+                    eError = ReadEEPROMValueIntoVarStruct(pVarAccess, sReq.i16Num);
+                    if (eError != eSCI_SLAVE_ERROR_NONE)
                         goto terminate;
                 }
 
-                eError = readValFromVarStruct(pVarAccess, sReq.i16Num, &f_val);
-                if (eError != eSCI_ERROR_NONE)
+                eError = ReadValFromVarStruct(pVarAccess, sReq.i16Num, &f_val);
+                if (eError != eSCI_SLAVE_ERROR_NONE)
                     goto terminate;
                 
                 psRsp->sTransferData.puRespVals[0].f_float = f_val;
@@ -77,25 +77,25 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
                 float f_formerVal, newVal = 0.0;
                 //bool writeSuccessful = false;
 
-                eError = readValFromVarStruct(pVarAccess, sReq.i16Num, &f_formerVal);
+                eError = ReadValFromVarStruct(pVarAccess, sReq.i16Num, &f_formerVal);
 
-                if (eError != eSCI_ERROR_NONE)
+                if (eError != eSCI_SLAVE_ERROR_NONE)
                     goto terminate;
 
                 // Read back actual value and write new one (write will only happen if read was successful)
-                eError = writeValToVarStruct(pVarAccess, sReq.i16Num, sReq.uValArr[0].f_float);
-                if (eError != eSCI_ERROR_NONE)
+                eError = WriteValToVarStruct(pVarAccess, sReq.i16Num, sReq.uValArr[0].f_float);
+                if (eError != eSCI_SLAVE_ERROR_NONE)
                     goto terminate;
 
                 // If the varStruct write operation was successful, trigger an EEPROM write (if callback present and variable is of type eVARTYPE_EEPROM)
                 if (pVarAccess->pVarStruct[sReq.i16Num - 1].eVartype == eVARTYPE_EEPROM)
                 {
                     // If conditions are met, write must be successful.
-                    eError = writeEEPROMwithValueFromVarStruct(pVarAccess, sReq.i16Num);
-                    if (eError != eSCI_ERROR_NONE)
+                    eError = WriteEEPROMwithValueFromVarStruct(pVarAccess, sReq.i16Num);
+                    if (eError != eSCI_SLAVE_ERROR_NONE)
                     {
                         // If the EEPROM write was not successful, write back the old value to the var struct to keep it in sync with the EEPROM.
-                        writeValToVarStruct(pVarAccess, sReq.i16Num, f_formerVal);
+                        WriteValToVarStruct(pVarAccess, sReq.i16Num, f_formerVal);
                         goto terminate;
                     }
                 }
@@ -104,7 +104,7 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
                 if (pVarAccess->pVarStruct[sReq.i16Num - 1].ap != NULL)
                     pVarAccess->pVarStruct[sReq.i16Num - 1].ap();
 
-                readValFromVarStruct(pVarAccess, sReq.i16Num, &newVal);
+                ReadValFromVarStruct(pVarAccess, sReq.i16Num, &newVal);
 
                 // If everything happens to be allright, create the response
                 psRsp->sTransferData.puRespVals[0].f_float = newVal;
@@ -136,7 +136,7 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
                     }
                     else
                     {
-                        eError = eSCI_ERROR_REQUEST_UNKNOWN;
+                        eError = eSCI_SLAVE_ERROR_REQUEST_UNKNOWN;
                         goto terminate;
                     }
 
@@ -161,8 +161,8 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
                 }
                 else
                 {
-                    psRsp->eReqAck     = psTransfer->sResponseControl.sRsp.eReqAck;
-                    psRsp->sTransferData            = psTransfer->sResponseControl.sRsp.sTransferData;
+                    psRsp->eReqAck          = psTransfer->sResponseControl.sRsp.eReqAck;
+                    psRsp->sTransferData    = psTransfer->sResponseControl.sRsp.sTransferData;
                     psTransfer->sResponseControl.ui8ControlBits.firstPacketNotSent = false;
                 }
             }
@@ -182,7 +182,7 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
             // TODO: Error handling
             else
             {
-                eError = eSCI_ERROR_UPSTREAM_NOT_INITIATED;
+                eError = eSCI_SLAVE_ERROR_UPSTREAM_NOT_INITIATED;
                 goto terminate;
             }
             break;

@@ -65,15 +65,19 @@ teSCI_SLAVE_ERROR SCISlaveInit(tsSCI_SLAVE_CALLBACKS sCallbacks, const tsSCIVAR 
     fifoBufInit(&sSciSlave.sRxFIFO, sSciSlave.ui8RxBuffer, RX_PACKET_LENGTH);
     fifoBufInit(&sSciSlave.sTxFIFO, sSciSlave.ui8TxBuffer, TX_PACKET_LENGTH);
 
+    // Start to receive data
+    SCIDatalinkStartRx(&sSciSlave.sDatalink);
+
     // Initialize the variable structure
-    return (initVarstruct(&sSciSlave.sVarAccess));
+    return (InitVarstruct(&sSciSlave.sVarAccess));
+
 }
 
 //=============================================================================
 void SCISlaveReceiveData (uint8_t ui8Data)
 {
     // Call the lower level datalink level functionality
-    receive(&sSciSlave.sDatalink, &sSciSlave.sRxFIFO, ui8Data);
+    SCIDataLinkReceiveTransfer(&sSciSlave.sDatalink, &sSciSlave.sRxFIFO, ui8Data);
 }
 
 
@@ -83,10 +87,18 @@ void SCISlaveStatemachine (void)
     // Check the lower level datalink states and set the protocol state accordingly
     if (sSciSlave.e_state > ePROTOCOL_ERROR)
     {
-        if (sSciSlave.e_state < ePROTOCOL_EVALUATING)
-            sSciSlave.e_state = (tePROTOCOL_STATE)getDatalinkReceiveState(&sSciSlave.sDatalink);
-        // else
-        //     sSciSlave.e_state = sSciSlave.datalink.tState;
+        // Datalink state dependend Protocol states
+        switch(sSciSlave.sDatalink.rState)
+        {
+            case eDATALINK_RSTATE_BUSY:
+                sSciSlave.e_state = ePROTOCOL_RECEIVING;
+                break;
+            case eDATALINK_RSTATE_PENDING:
+                sSciSlave.e_state = ePROTOCOL_EVALUATING;
+                break;
+            default:
+                break;
+        }
     }
 
     switch(sSciSlave.e_state)
@@ -101,10 +113,7 @@ void SCISlaveStatemachine (void)
                 tsREQUEST    sReq = tsREQUEST_DEFAULTS;
                 tsRESPONSE   sRsp = tsRESPONSE_DEFAULTS; 
                 uint8_t     ui8_msgSize = readBuf(&sSciSlave.sRxFIFO, &pui8Buf);
-                teSCI_SLAVE_ERROR  eError = eSCI_ERROR_NONE;
-
-                // Clear Datalink State
-                acknowledgeRx(&sSciSlave.sDatalink);
+                teSCI_SLAVE_ERROR  eError = eSCI_SLAVE_ERROR_NONE;
 
                 // Parse the command (skip STX and don't care for ETX)
                 eError = SCISlaveRequestParser(pui8Buf, ui8_msgSize, &sReq);
@@ -114,11 +123,11 @@ void SCISlaveStatemachine (void)
                 sRsp.eReqType = sReq.eReqType;
 
                 // Execute the command
-                if (eError == eSCI_ERROR_NONE)
+                if (eError == eSCI_SLAVE_ERROR_NONE)
                     eError = SCIProcessRequest(&sSciSlave.sSciTransfer, &sSciSlave.sVarAccess, sReq, &sRsp);
 
                 // If there was an SCI error, return the error number with offset
-                if(eError != eSCI_ERROR_NONE)
+                if(eError != eSCI_SLAVE_ERROR_NONE)
                     sRsp.sTransferData.ui16Error = GET_SCI_ERROR_NUMBER((uint16_t)eError);
 
 
@@ -138,7 +147,7 @@ void SCISlaveStatemachine (void)
 
                 /// @todo Error handling -> Message too long
 
-                if (transmit(&sSciSlave.sDatalink, &sSciSlave.sTxFIFO))
+                if (SCIDatalinkTransmit(&sSciSlave.sDatalink, &sSciSlave.sTxFIFO))
                     sSciSlave.e_state = ePROTOCOL_SENDING;
                 /// @todo Error handling?
                 else 
@@ -149,12 +158,15 @@ void SCISlaveStatemachine (void)
 
         case ePROTOCOL_SENDING:
 
-            transmitStateMachine(&sSciSlave.sDatalink);
+            SCIDatalinkTransmitStateMachine(&sSciSlave.sDatalink);
             
-            if (getDatalinkTransmitState(&sSciSlave.sDatalink) == eDATALINK_TSTATE_READY)
+            if (SCIDatalinkGetTransmitState(&sSciSlave.sDatalink) == eDATALINK_TSTATE_READY)
             {
-                acknowledgeTx(&sSciSlave.sDatalink);
+                SCIDatalinkAcknowledgeTx(&sSciSlave.sDatalink);
                 sSciSlave.e_state = ePROTOCOL_IDLE;
+
+                // Clear Datalink State
+                SCIDatalinkStartRx(&sSciSlave.sDatalink);
             }
             
             break;
@@ -167,5 +179,5 @@ void SCISlaveStatemachine (void)
 //=============================================================================
 teSCI_SLAVE_ERROR SCISlaveGetVarFromStruct(int16_t i16VarNum, tsSCIVAR* pVar)
 {
-    return getVar(&sSciSlave.sVarAccess, pVar, i16VarNum);
+    return GetVar(&sSciSlave.sVarAccess, pVar, i16VarNum);
 }

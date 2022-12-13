@@ -77,7 +77,7 @@ teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8Buf, uint8_t ui8StringSize,
 
     // No valid command identifier found (TODO: Error handling)
     if (psReq->eReqType == eREQUEST_TYPE_NONE)
-        return eSCI_ERROR_REQUEST_IDENTIFIER_NOT_FOUND;
+        return eSCI_SLAVE_ERROR_REQUEST_IDENTIFIER_NOT_FOUND;
     
     /*******************************************************************************************
      * Variable number conversion
@@ -95,7 +95,7 @@ teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8Buf, uint8_t ui8StringSize,
         // Convert
         #ifdef VALUE_MODE_HEX
         if(!strToHex(p_numStr, &ui32_tmp))
-           return eSCI_ERROR_VARIABLE_NUMBER_CONVERSION_FAILED; 
+           return eSCI_SLAVE_ERROR_VARIABLE_NUMBER_CONVERSION_FAILED; 
         psReq->i16Num = *(int16_t*)(&ui32_tmp);
         #else
         psReq->i16Num = (int16_t)(atoi((char*)p_numStr));
@@ -139,7 +139,7 @@ teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8Buf, uint8_t ui8StringSize,
 
             #ifdef VALUE_MODE_HEX
             if(!strToHex(p_valStr, &psReq->uValArr[ui8NumOfVals - 1].ui32_hex))
-                return eSCI_ERROR_REQUEST_VALUE_CONVERSION_FAILED;
+                return eSCI_SLAVE_ERROR_REQUEST_VALUE_CONVERSION_FAILED;
             #else
             psReq->valArr[ui8NumOfVals - 1].f_float = atof((char*)p_valStr);
             #endif
@@ -155,7 +155,7 @@ teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8Buf, uint8_t ui8StringSize,
         psReq->ui8ValArrLen = ui8NumOfVals;
     }
 
-    return eSCI_ERROR_NONE;
+    return eSCI_SLAVE_ERROR_NONE;
 }
 
 //=============================================================================
@@ -292,7 +292,7 @@ uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, uint32_t
         // Upstream data does not get converted into an ASCII-stream
         // Determine the actual packet length
         ui8MaxSize = psRsp->sTransferData.ui32DatLen < ui8MaxSize ? psRsp->sTransferData.ui32DatLen : ui8MaxSize;
-        memcpy(pui8Buf, psRsp->sTransferData.pui8UpStreamBuf[*pui32DataIdx], ui8MaxSize);
+        memcpy(pui8Buf, &psRsp->sTransferData.pui8UpStreamBuf[*pui32DataIdx], ui8MaxSize);
 
         psRsp->sTransferData.ui32DatLen -= ui8MaxSize;
         *pui32DataIdx += ui8MaxSize;
@@ -335,7 +335,7 @@ uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, uint32_t
                 break;
             }
 
-            ui8AsciiSize = (uint8_t)hexToStrDword(ui8DataBuf, &psRsp->sTransferData.puRespVals[*pui32DataIdx], true);
+            ui8AsciiSize = (uint8_t)hexToStrDword(ui8DataBuf, (uint32_t*)&psRsp->sTransferData.puRespVals[*pui32DataIdx], true);
 
             // Fits the value in the buffer?
             if ((ui8_currentDataSize + ui8AsciiSize) < ui8MaxSize)
