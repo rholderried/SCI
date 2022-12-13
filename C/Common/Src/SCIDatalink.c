@@ -6,6 +6,7 @@
  *
  * <b> History </b>
  * 	- 2022-11-17 - Copy from SCI
+ *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
 /******************************************************************************
@@ -15,7 +16,7 @@
 #include <stddef.h>
 #include "SCIDataLink.h"
 #include "Buffer.h"
-#include "SCIMasterConfig.h"
+#include "SCIconfig.h"
 
 /******************************************************************************
  * Function definitions

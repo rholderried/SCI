@@ -11,6 +11,7 @@
  * <b> History </b>
  * 	- 2022-01-13 - File creation 
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
+ *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
 #ifndef _SCICONFIG_H_

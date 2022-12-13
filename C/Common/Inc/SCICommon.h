@@ -6,6 +6,7 @@
  *
  * <b> History </b>
  * 	- 2022-11-17 - File copied from SCI
+ *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
 #ifndef _SCICOMMON_H_

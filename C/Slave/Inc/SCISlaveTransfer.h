@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "SCIVariables.h"
+#include "SCIVarAccess.h"
 #include "CommandStucture.h"
 #include "SCITransferCommon.h"
 #include "SCICommon.h"

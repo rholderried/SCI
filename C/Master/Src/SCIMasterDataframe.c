@@ -6,6 +6,7 @@
  *
  * <b> History </b>
  * 	- 2022-11-21 - File creation -
+ *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
 /******************************************************************************
@@ -25,9 +26,13 @@
  * Global variable definition
  *****************************************************************************/
 // Note: The idizes correspond to the values of the C enum values!
-static const char acknowledgeArr [5][4] = {"ACK", "DAT", "UPS", "ERR", "NAK"};
-static const uint8_t cmdIdArr[6] = {'#', '?', '!', ':', '>', '<'};
-// const uint8_t ui8_byteLength[7] = {1,1,2,2,4,4,4};
+static const char cAcknowledgeArr [5][4] = {"ACK", "DAT", "UPS", "ERR", "NAK"};
+static const uint8_t ui8CmdIdArr[6] = { UNKNOWN_IDENTIFIER, 
+                                        GETVAR_IDENTIFIER,
+                                        SETVAR_IDENTIFIER,
+                                        COMMAND_IDENTIFIER,
+                                        UPSTREAM_IDENTIFIER,
+                                        DOWNSTREAM_IDENTIFIER};
 
 /******************************************************************************
  * Function declarations
@@ -49,7 +54,7 @@ teSCI_MASTER_ERROR SCIMasterRequestBuilder(uint8_t *pui8Buf, uint8_t *pui8Size, 
 
     // Increase Buffer index and write request type identifier
     pui8Buf += *pui8Size;
-    *pui8Buf++ = cmdIdArr[sReq.eReqType];
+    *pui8Buf++ = ui8CmdIdArr[sReq.eReqType];
     (*pui8Size)++;
 
     for(uint8_t i = 0; i < sReq.ui8ValArrLen; i++)
@@ -341,7 +346,7 @@ int16_t _CheckAcknowledge (uint8_t *pui8Buf, uint8_t i16BytesToGo)
 
     for ( ;j < 5; j++)
     {
-        if (!strcmp(acknowledgeArr[j], cAck))
+        if (!strcmp(cAcknowledgeArr[j], cAck))
             break;
     }
 

@@ -5,7 +5,8 @@
  * \brief Dataframe parsing functionality of the SCI protocol.
  *
  * <b> History </b>
- * 	- 2022-11-21 - File creation -
+ * 	- 2022-11-21 - File creation
+ *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
 /******************************************************************************
@@ -18,6 +19,7 @@
 
 #include "SCICommon.h"
 #include "SCISlaveDataframe.h"
+#include "SCITransferCommon.h"
 #include "Helpers.h"
 
 /******************************************************************************

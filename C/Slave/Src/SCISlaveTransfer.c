@@ -21,7 +21,7 @@
 #include "SCISlaveTransfer.h"
 #include "SCITransferCommon.h"
 #include "SCICommon.h"
-#include "Variables.h"
+#include "SCIVariables.h"
 #include "Helpers.h"
 #include "SCIconfig.h"
 
@@ -35,7 +35,7 @@ extern const uint8_t ui8_byteLength[];
  * Function definitions
  *****************************************************************************/
 //=============================================================================
-teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, VAR_ACCESS *p_varAccess, tsREQUEST sReq, tsRESPONSE *psRsp)
+teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCESS *pVarAccess, tsREQUEST sReq, tsRESPONSE *psRsp)
 {
     // RESPONSE rsp = RESPONSE_DEFAULT;
     teSCI_SLAVE_ERROR eError = eSCI_ERROR_NONE;
@@ -52,15 +52,15 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, VAR_ACCESS
                 float f_val = 0.0;
 
                 // If there is no readEEPROM callback or this is no EEPROM var, simply skip this step
-                if (p_varAccess->p_varStruct[sReq.i16Num - 1].vartype == eVARTYPE_EEPROM)
+                if (pVarAccess->pVarStruct[sReq.i16Num - 1].eVartype == eVARTYPE_EEPROM)
                 {
                     // If conditions are met, EEPROM read must be successful.
-                    eError = readEEPROMValueIntoVarStruct(p_varAccess, sReq.i16Num);
+                    eError = readEEPROMValueIntoVarStruct(pVarAccess, sReq.i16Num);
                     if (eError != eSCI_ERROR_NONE)
                         goto terminate;
                 }
 
-                eError = readValFromVarStruct(p_varAccess, sReq.i16Num, &f_val);
+                eError = readValFromVarStruct(pVarAccess, sReq.i16Num, &f_val);
                 if (eError != eSCI_ERROR_NONE)
                     goto terminate;
                 
@@ -77,34 +77,34 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, VAR_ACCESS
                 float f_formerVal, newVal = 0.0;
                 //bool writeSuccessful = false;
 
-                eError = readValFromVarStruct(p_varAccess, sReq.i16Num, &f_formerVal);
+                eError = readValFromVarStruct(pVarAccess, sReq.i16Num, &f_formerVal);
 
                 if (eError != eSCI_ERROR_NONE)
                     goto terminate;
 
                 // Read back actual value and write new one (write will only happen if read was successful)
-                eError = writeValToVarStruct(p_varAccess, sReq.i16Num, sReq.uValArr[0].f_float);
+                eError = writeValToVarStruct(pVarAccess, sReq.i16Num, sReq.uValArr[0].f_float);
                 if (eError != eSCI_ERROR_NONE)
                     goto terminate;
 
                 // If the varStruct write operation was successful, trigger an EEPROM write (if callback present and variable is of type eVARTYPE_EEPROM)
-                if (p_varAccess->p_varStruct[sReq.i16Num - 1].vartype == eVARTYPE_EEPROM)
+                if (pVarAccess->pVarStruct[sReq.i16Num - 1].eVartype == eVARTYPE_EEPROM)
                 {
                     // If conditions are met, write must be successful.
-                    eError = writeEEPROMwithValueFromVarStruct(p_varAccess, sReq.i16Num);
+                    eError = writeEEPROMwithValueFromVarStruct(pVarAccess, sReq.i16Num);
                     if (eError != eSCI_ERROR_NONE)
                     {
                         // If the EEPROM write was not successful, write back the old value to the var struct to keep it in sync with the EEPROM.
-                        writeValToVarStruct(p_varAccess, sReq.i16Num, f_formerVal);
+                        writeValToVarStruct(pVarAccess, sReq.i16Num, f_formerVal);
                         goto terminate;
                     }
                 }
 
                 // Everything was successful -> We call the action procedure
-                if (p_varAccess->p_varStruct[sReq.i16Num - 1].ap != NULL)
-                    p_varAccess->p_varStruct[sReq.i16Num - 1].ap();
+                if (pVarAccess->pVarStruct[sReq.i16Num - 1].ap != NULL)
+                    pVarAccess->pVarStruct[sReq.i16Num - 1].ap();
 
-                readValFromVarStruct(p_varAccess, sReq.i16Num, &newVal);
+                readValFromVarStruct(pVarAccess, sReq.i16Num, &newVal);
 
                 // If everything happens to be allright, create the response
                 psRsp->sTransferData.puRespVals[0].f_float = newVal;

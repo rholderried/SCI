@@ -19,7 +19,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include "SCIMasterConfig.h"
+#include "SCIconfig.h"
 #include "SCITransferCommon.h"
 
 /******************************************************************************

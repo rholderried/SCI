@@ -6,6 +6,7 @@
  *
  * <b> History </b>
  * 	- 2022-01-18 - File creation
+ *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
  *****************************************************************************/
 
 #ifndef _COMMANDSTRUCTURE_H_

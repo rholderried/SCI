@@ -20,6 +20,7 @@
 #include <stdbool.h>
 
 #include "SCICommon.h"
+#include "SCITransferCommon.h"
 
 /******************************************************************************
  * Defines
