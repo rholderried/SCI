@@ -109,13 +109,17 @@ typedef struct
 /******************************************************************************
  * Function declarations
  *****************************************************************************/
+void SCISlaveTransferInitiateResponse (tsSCI_TRANSFER_SLAVE *psTransfer, int16_t i16Num, teREQUEST_TYPE eReqType);
+
+void SCISlaveTransferSetError (tsSCI_TRANSFER_SLAVE *psTransfer, uint16_t ui16Error);
+
 /** \brief Executes the incoming request.
  *
  * @param cmd               Holds the command information from the parsed command.
  * @returns Response structure.
  */
-teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCESS *pVarAccess, tsREQUEST sReq, tsRESPONSE *psRsp);
+teSCI_SLAVE_ERROR SCISlaveTransferProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCESS *pVarAccess, tsREQUEST sReq);
 
-void clearResponseControl(tsSCI_TRANSFER_SLAVE *psTransfer);
+void SCISlaveTransferClearResponseControl(tsSCI_TRANSFER_SLAVE *psTransfer);
 
 #endif //_SCISLAVETRANSFER_H_

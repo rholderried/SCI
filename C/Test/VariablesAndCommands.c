@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
 #include "SCIVariables.h"
 #include "SCIconfig.h"
 #include "CommandStucture.h"
@@ -18,14 +19,14 @@ tsSCIVAR varStruct[] = {{&testVar, eVARTYPE_RAM, eDTYPE_F32,NULL},           // 
                         {&i32_test, eVARTYPE_RAM, eDTYPE_INT32,NULL}};    // Number 5
 
 uint8_t ui8_testBuffer[20] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
-uint32_t ui32_testBuffer[20] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
+uint32_t ui32_testBuffer[10] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
 
 #ifdef VALUE_MODE_HEX
 teREQUEST_ACKNOWLEDGE testCmd (uint32_t* pui32_valArray, uint8_t ui8_valArrayLen, tsTRANSFER_DATA *psData)
 {
-    psData->puRespVals  = (tuRESPONSEVALUE*)ui32_testBuffer;
-    psData->ui32DatLen  = 20;
+    memcpy(psData->puRespVals, ui32_testBuffer, sizeof(ui32_testBuffer));
+    psData->ui32DatLen  = 10;
 
     return eREQUEST_ACK_STATUS_SUCCESS;
 }

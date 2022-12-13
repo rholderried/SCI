@@ -34,15 +34,23 @@ extern const uint8_t ui8_byteLength[];
 /******************************************************************************
  * Function definitions
  *****************************************************************************/
+void SCISlaveTransferInitiateResponse (tsSCI_TRANSFER_SLAVE *psTransfer, int16_t i16Num, teREQUEST_TYPE eReqType)
+{
+    psTransfer->sResponseControl.sRsp.i16Num = i16Num;
+    psTransfer->sResponseControl.sRsp.eReqType = eReqType;
+}
+
 //=============================================================================
-teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCESS *pVarAccess, tsREQUEST sReq, tsRESPONSE *psRsp)
+void SCISlaveTransferSetError (tsSCI_TRANSFER_SLAVE *psTransfer, uint16_t ui16Error)
+{
+    psTransfer->sResponseControl.sRsp.sTransferData.ui16Error = ui16Error;
+}
+
+//=============================================================================
+teSCI_SLAVE_ERROR SCISlaveTransferProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCESS *pVarAccess, tsREQUEST sReq)
 {
     // RESPONSE rsp = RESPONSE_DEFAULT;
     teSCI_SLAVE_ERROR eError = eSCI_SLAVE_ERROR_NONE;
-
-    // This is done outside of this method now
-    // psRsp->i16Num         = sReq.i16Num;
-    // psRsp->eReqType       = sReq.eReqType;
 
     switch (sReq.eReqType)
     {
@@ -64,11 +72,8 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
                 if (eError != eSCI_SLAVE_ERROR_NONE)
                     goto terminate;
                 
-                psRsp->sTransferData.puRespVals[0].f_float = f_val;
-                psRsp->eReqAck = eREQUEST_ACK_STATUS_SUCCESS;
-                
-                // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
-                clearResponseControl(psTransfer);
+                psTransfer->sResponseControl.sRsp.sTransferData.puRespVals[0].f_float = f_val;
+                psTransfer->sResponseControl.sRsp.eReqAck = eREQUEST_ACK_STATUS_SUCCESS;   
             }
             break;
 
@@ -107,18 +112,15 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
                 ReadValFromVarStruct(pVarAccess, sReq.i16Num, &newVal);
 
                 // If everything happens to be allright, create the response
-                psRsp->sTransferData.puRespVals[0].f_float = newVal;
-                psRsp->eReqAck = eREQUEST_ACK_STATUS_SUCCESS;
-
-                // We invalidate the response control because if there is a command ongoing, it has obviously been cancelled
-                clearResponseControl(psTransfer);
+                psTransfer->sResponseControl.sRsp.sTransferData.puRespVals[0].f_float = newVal;
+                psTransfer->sResponseControl.sRsp.eReqAck = eREQUEST_ACK_STATUS_SUCCESS;
             }
             break;
         
         case eREQUEST_TYPE_COMMAND:
             {
                 teREQUEST_ACKNOWLEDGE eReqAck = eREQUEST_ACK_STATUS_UNKNOWN;
-                tsTRANSFER_DATA sTransferData = tsTRANSFER_DATA_DEFAULTS;
+                // tsTRANSFER_DATA sTransferData = tsTRANSFER_DATA_DEFAULTS;
                 // Determine if a new command has been sent or if the ongoing command is to be processed
                 bool bNewCmd = psTransfer->sResponseControl.ui8ControlBits.ongoing == false || (psTransfer->sResponseControl.sRsp.i16Num != sReq.i16Num);
 
@@ -129,9 +131,9 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
                     {
                         // TODO: Support for passing values to the command function
                         #ifdef VALUE_MODE_HEX
-                        eReqAck = psTransfer->pCmdCBStruct[sReq.i16Num - 1](&sReq.uValArr[0].ui32_hex,sReq.ui8ValArrLen, &sTransferData);
+                        eReqAck = psTransfer->pCmdCBStruct[sReq.i16Num - 1](&sReq.uValArr[0].ui32_hex,sReq.ui8ValArrLen, &psTransfer->sResponseControl.sRsp.sTransferData);
                         #else
-                        eReqAck = psTransfer->pCmdCBStruct[sReq.i16Num - 1](&sReq.uValArr[0].f_float,sReq.ui8ValArrLen, &sTransferData);
+                        eReqAck = psTransfer->pCmdCBStruct[sReq.i16Num - 1](&sReq.uValArr[0].f_float,sReq.ui8ValArrLen, &psTransfer->sResponseControl.sRsp.sTransferData);
                         #endif
                     }
                     else
@@ -142,8 +144,8 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
 
                     // Response is getting sent independently of command success
                     
-                    psRsp->eReqAck          = eReqAck;
-                    psRsp->sTransferData    = sTransferData;
+                    psTransfer->sResponseControl.sRsp.eReqAck          = eReqAck;
+                    // psTransfer->sResponseControl.sRsp.sTransferData    = sTransferData;
 
                     // Fill the response control struct
                     psTransfer->sResponseControl.ui8ControlBits.firstPacketNotSent  = true;
@@ -151,18 +153,18 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
                     
                     // Set the control bits if a data transfer has been initiated
                     psTransfer->sResponseControl.ui8ControlBits.ongoing = 
-                        ((psRsp->eReqAck == eREQUEST_ACK_STATUS_SUCCESS_DATA) && (psRsp->sTransferData.ui32DatLen > 0));
+                        ((psTransfer->sResponseControl.sRsp.eReqAck == eREQUEST_ACK_STATUS_SUCCESS_DATA) && (psTransfer->sResponseControl.sRsp.sTransferData.ui32DatLen > 0));
                     psTransfer->sResponseControl.ui8ControlBits.upstream = 
-                        ((psRsp->eReqAck == eREQUEST_ACK_STATUS_SUCCESS_UPSTREAM) && (psRsp->sTransferData.ui32DatLen > 0));
+                        ((psTransfer->sResponseControl.sRsp.eReqAck == eREQUEST_ACK_STATUS_SUCCESS_UPSTREAM) && (psTransfer->sResponseControl.sRsp.sTransferData.ui32DatLen > 0));
                     
                     // Save the response for later
-                    psTransfer->sResponseControl.sRsp = *psRsp;
+                    // psTransfer->sResponseControl.sRsp = *psRsp;
                     
                 }
                 else
                 {
-                    psRsp->eReqAck          = psTransfer->sResponseControl.sRsp.eReqAck;
-                    psRsp->sTransferData    = psTransfer->sResponseControl.sRsp.sTransferData;
+                    // psRsp->eReqAck          = psTransfer->sResponseControl.sRsp.eReqAck;
+                    // psRsp->sTransferData    = psTransfer->sResponseControl.sRsp.sTransferData;
                     psTransfer->sResponseControl.ui8ControlBits.firstPacketNotSent = false;
                 }
             }
@@ -173,10 +175,10 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
             // Number must match with the previously sent command
             if (psTransfer->sResponseControl.sRsp.i16Num == sReq.i16Num && psTransfer->sResponseControl.ui8ControlBits.upstream == true)
             {
-                psRsp->eReqAck   = eREQUEST_ACK_STATUS_SUCCESS;
-                psRsp->sTransferData          = psTransfer->sResponseControl.sRsp.sTransferData;
+                psTransfer->sResponseControl.sRsp.eReqAck   = eREQUEST_ACK_STATUS_SUCCESS;
+                // psRsp->sTransferData          = psTransfer->sResponseControl.sRsp.sTransferData;
                 // Change the command type
-                psTransfer->sResponseControl.sRsp.eReqType = psRsp->eReqType;
+                // psTransfer->sResponseControl.sRsp.eReqType = psRsp->eReqType;
             }
             // If conditions are not met, provide the minimal information to construct a proper answer
             // TODO: Error handling
@@ -198,13 +200,13 @@ teSCI_SLAVE_ERROR SCIProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfer, tsVAR_ACCE
 
 
 //=============================================================================
-void clearResponseControl(tsSCI_TRANSFER_SLAVE *psTransfer)
+void SCISlaveTransferClearResponseControl(tsSCI_TRANSFER_SLAVE *psTransfer)
 {
     tsRESPONSECONTROL cleanObj = tsRESPONSECONTROL_DEFAULTS;
 
     // Free previously allocated memory
-    if (psTransfer->sResponseControl.sRsp.sTransferData.ui8InfoFlagBits.dataBufDynamic == true)
-        free(psTransfer->sResponseControl.sRsp.sTransferData.puRespVals);
+    // if (psTransfer->sResponseControl.sRsp.sTransferData.ui8InfoFlagBits.dataBufDynamic == true)
+    //     free(psTransfer->sResponseControl.sRsp.sTransferData.puRespVals);
     if (psTransfer->sResponseControl.sRsp.sTransferData.ui8InfoFlagBits.upstreamBufDynamic == true)
         free(psTransfer->sResponseControl.sRsp.sTransferData.pui8UpStreamBuf);
 

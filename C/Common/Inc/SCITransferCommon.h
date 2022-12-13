@@ -74,20 +74,20 @@ typedef struct
     {
         struct
         {
-            uint8_t dataBufDynamic      : 1;
+            // uint8_t dataBufDynamic      : 1;
             uint8_t upstreamBufDynamic  : 1;
-            uint8_t reserved            : 6;
+            uint8_t reserved            : 7;
         }ui8InfoFlagBits;
 
         uint8_t ui8InfoFlagByte;
     };
     uint8_t         *pui8UpStreamBuf;
-    tuRESPONSEVALUE *puRespVals;
+    tuRESPONSEVALUE puRespVals[MAX_NUM_RESPONSE_VALUES];
     uint32_t        ui32DatLen;
     uint16_t        ui16Error;
 }tsTRANSFER_DATA;
 
-#define tsTRANSFER_DATA_DEFAULTS {{.ui8InfoFlagByte = 0}, NULL, NULL, 0, 0}
+#define tsTRANSFER_DATA_DEFAULTS {{.ui8InfoFlagByte = 0}, NULL, {{.ui32_hex = 0}}, 0, 0}
 
 /** \brief REQUEST structure declaration.*/
 typedef struct

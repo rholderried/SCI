@@ -20,6 +20,7 @@
 #include "SCICommon.h"
 #include "SCISlaveDataframe.h"
 #include "SCITransferCommon.h"
+#include "SCISlaveTransfer.h"
 #include "Helpers.h"
 
 /******************************************************************************
@@ -159,26 +160,26 @@ teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8Buf, uint8_t ui8StringSize,
 }
 
 //=============================================================================
-uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, bool bFirstPacketNotSent, bool bOngoing, uint32_t *pui32DataIdx, tsRESPONSE *psRsp)
+uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, tsRESPONSECONTROL *psResponseControl)
 {
     uint8_t ui8_size    = 0;
 
     // Convert variable number to ASCII
     #ifdef VALUE_MODE_HEX
-    ui8_size = (uint8_t)hexToStrWord(pui8Buf, (uint16_t*)&psRsp->i16Num, true);
+    ui8_size = (uint8_t)hexToStrWord(pui8Buf, (uint16_t*)&psResponseControl->sRsp.i16Num, true);
     #else
     ui8_size = ftoa(pui8Buf, (float)sRsp.i16Num, true);
     #endif
 
     // Increase Buffer index and write command type identifier
     pui8Buf += ui8_size;
-    *pui8Buf++ = ui8CmdIdArr[psRsp->eReqType];
+    *pui8Buf++ = ui8CmdIdArr[psResponseControl->sRsp.eReqType];
     ui8_size++;
 
 
-    if (!(psRsp->eReqAck == eREQUEST_ACK_STATUS_ERROR || psRsp->eReqAck == eREQUEST_ACK_STATUS_UNKNOWN))
+    if (!(psResponseControl->sRsp.eReqAck == eREQUEST_ACK_STATUS_ERROR || psResponseControl->sRsp.eReqAck == eREQUEST_ACK_STATUS_UNKNOWN))
     {
-        switch (psRsp->eReqType)
+        switch (psResponseControl->sRsp.eReqType)
         {
             case eREQUEST_TYPE_GETVAR:
                 // Fill the response designator
@@ -188,9 +189,9 @@ uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, bool bFirstPacketNotSent, bool
                 ui8_size += 4;
                 // Write the data value into the buffer
                 #ifdef VALUE_MODE_HEX
-                ui8_size += (uint8_t)hexToStrDword(pui8Buf, &psRsp->sTransferData.puRespVals[0].ui32_hex, true);
+                ui8_size += (uint8_t)hexToStrDword(pui8Buf, &psResponseControl->sRsp.sTransferData.puRespVals[0].ui32_hex, true);
                 #else
-                ui8_size += ftoa(pui8Buf, psRsp->sTransferData.puRespVals[0].f_float, true);
+                ui8_size += ftoa(pui8Buf, psResponseControl->sRsp.sTransferData.puRespVals[0].f_float, true);
                 #endif
                 break;
             
@@ -203,22 +204,22 @@ uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, bool bFirstPacketNotSent, bool
 
             case eREQUEST_TYPE_COMMAND:
                 // No response designator on every consecutive packet
-                if (bFirstPacketNotSent)
+                if (psResponseControl->ui8ControlBits.firstPacketNotSent)
                 {
-                    memcpy(pui8Buf, &cAcknowledgeArr[(uint8_t)psRsp->eReqAck], 3);
+                    memcpy(pui8Buf, &cAcknowledgeArr[(uint8_t)psResponseControl->sRsp.eReqAck], 3);
                     pui8Buf+=3;
                     ui8_size += 3;
 
-                    if (psRsp->eReqAck == eREQUEST_ACK_STATUS_SUCCESS_DATA ||psRsp->eReqAck == eREQUEST_ACK_STATUS_SUCCESS_UPSTREAM)
+                    if (psResponseControl->sRsp.eReqAck == eREQUEST_ACK_STATUS_SUCCESS_DATA ||psResponseControl->sRsp.eReqAck == eREQUEST_ACK_STATUS_SUCCESS_UPSTREAM)
                     {
                         uint8_t ui8AsciiSize;
 
                         *pui8Buf++ = ';';
                         ui8_size++;
                         #ifdef VALUE_MODE_HEX
-                        ui8AsciiSize = (uint8_t)hexToStrDword(pui8Buf, &psRsp->sTransferData.ui32DatLen, true);
+                        ui8AsciiSize = (uint8_t)hexToStrDword(pui8Buf, &psResponseControl->sRsp.sTransferData.ui32DatLen, true);
                         #else
-                        ui8AsciiSize = ftoa(pui8Buf, (float)psRsp->sTransferData.ui32_datLen, true);
+                        ui8AsciiSize = ftoa(pui8Buf, (float)psResponseControl->sRsp.sTransferData.ui32_datLen, true);
                         #endif
                         pui8Buf += ui8AsciiSize;
                         ui8_size += ui8AsciiSize;
@@ -226,14 +227,14 @@ uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, bool bFirstPacketNotSent, bool
                 }
 
                 // Fill the rest of the packet with data
-                if (bOngoing)
+                if (psResponseControl->ui8ControlBits.ongoing)
                 {
-                    if(bFirstPacketNotSent)
+                    if(psResponseControl->ui8ControlBits.firstPacketNotSent)
                     {
                         *pui8Buf++ = ';';
                         ui8_size++;
                     }
-                    ui8_size += _SCIFillBufferWithValues(pui8Buf, TX_PACKET_LENGTH - ui8_size, pui32DataIdx, psRsp);
+                    ui8_size += _SCIFillBufferWithValues(pui8Buf, TX_PACKET_LENGTH - ui8_size, psResponseControl);
                 }
 
                 break;
@@ -242,7 +243,7 @@ uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, bool bFirstPacketNotSent, bool
                 // upstream is sent without command ID overhead
                 pui8Buf -= ui8_size;
                 ui8_size = 0;
-                ui8_size += _SCIFillBufferWithValues(pui8Buf, TX_PACKET_LENGTH, pui32DataIdx, psRsp);
+                ui8_size += _SCIFillBufferWithValues(pui8Buf, TX_PACKET_LENGTH, psResponseControl);
                 break;
 
             default:
@@ -252,7 +253,7 @@ uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, bool bFirstPacketNotSent, bool
     else
     {
         // We get here for example if there was no valid command identifier found
-        if (psRsp->sTransferData.ui16Error == 0)
+        if (psResponseControl->sRsp.sTransferData.ui16Error == 0)
         {
             memcpy(pui8Buf, &cAcknowledgeArr[(uint8_t)eREQUEST_ACK_STATUS_UNKNOWN], 3);
             pui8Buf += 3;
@@ -265,9 +266,9 @@ uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, bool bFirstPacketNotSent, bool
             ui8_size ++;
             // Write the data value into the buffer
             #ifdef VALUE_MODE_HEX
-            ui8_size += (uint8_t)hexToStrWord(pui8Buf, &psRsp->sTransferData.ui16Error, true);
+            ui8_size += (uint8_t)hexToStrWord(pui8Buf, &psResponseControl->sRsp.sTransferData.ui16Error, true);
             #else
-            ui8_size += ftoa(pui8Buf, (float)psRsp->sTransferData.ui16Error, true);
+            ui8_size += ftoa(pui8Buf, (float)psResponseControl->sRsp.sTransferData.ui16Error, true);
             #endif
         }
 
@@ -279,23 +280,23 @@ uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, bool bFirstPacketNotSent, bool
 }
 
 //=============================================================================
-uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, uint32_t *pui32DataIdx, tsRESPONSE *psRsp)
+uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, tsRESPONSECONTROL *psResponseControl)
 {
     uint8_t ui8_currentDataSize = 0;
 
-    if (psRsp->eReqType == eREQUEST_TYPE_UPSTREAM)
+    if (psResponseControl->sRsp.eReqType == eREQUEST_TYPE_UPSTREAM)
     {
         // Check if there is a valid buffer pointer passed
-        if (psRsp->sTransferData.pui8UpStreamBuf == NULL)
+        if (psResponseControl->sRsp.sTransferData.pui8UpStreamBuf == NULL)
             return 0;
 
         // Upstream data does not get converted into an ASCII-stream
         // Determine the actual packet length
-        ui8MaxSize = psRsp->sTransferData.ui32DatLen < ui8MaxSize ? psRsp->sTransferData.ui32DatLen : ui8MaxSize;
-        memcpy(pui8Buf, &psRsp->sTransferData.pui8UpStreamBuf[*pui32DataIdx], ui8MaxSize);
+        ui8MaxSize = psResponseControl->sRsp.sTransferData.ui32DatLen < ui8MaxSize ? psResponseControl->sRsp.sTransferData.ui32DatLen : ui8MaxSize;
+        memcpy(pui8Buf, &psResponseControl->sRsp.sTransferData.pui8UpStreamBuf[psResponseControl->ui32DataIdx], ui8MaxSize);
 
-        psRsp->sTransferData.ui32DatLen -= ui8MaxSize;
-        *pui32DataIdx += ui8MaxSize;
+        psResponseControl->sRsp.sTransferData.ui32DatLen -= ui8MaxSize;
+        psResponseControl->ui32DataIdx += ui8MaxSize;
         ui8_currentDataSize += ui8MaxSize;
 
         // while (ui8MaxSize > (ui8_currentDataSize + 1) && psTransfer->sResponseControl.sRsp.sTransferData.ui32DatLen > 0)
@@ -308,7 +309,7 @@ uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, uint32_t
         //     pui8Buf += 2;
         // }
     }
-    else if (psRsp->eReqType == eREQUEST_TYPE_COMMAND)
+    else if (psResponseControl->sRsp.eReqType == eREQUEST_TYPE_COMMAND)
     {
         bool    bCommaSet = false;
         uint8_t ui8AsciiSize;
@@ -319,13 +320,13 @@ uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, uint32_t
         #endif
 
         // Check if there is a valid data format table pointer passed
-        if (psRsp->sTransferData.puRespVals == NULL)
+        if (psResponseControl->sRsp.sTransferData.puRespVals == NULL)
             return 0;
 
         while (true)
         {
             // All data is handled
-            if (psRsp->sTransferData.ui32DatLen == 0)
+            if (psResponseControl->sRsp.sTransferData.ui32DatLen == 0)
             {
                 if (bCommaSet)
                 {
@@ -335,7 +336,7 @@ uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, uint32_t
                 break;
             }
 
-            ui8AsciiSize = (uint8_t)hexToStrDword(ui8DataBuf, (uint32_t*)&psRsp->sTransferData.puRespVals[*pui32DataIdx], true);
+            ui8AsciiSize = (uint8_t)hexToStrDword(ui8DataBuf, (uint32_t*)&psResponseControl->sRsp.sTransferData.puRespVals[psResponseControl->ui32DataIdx], true);
 
             // Fits the value in the buffer?
             if ((ui8_currentDataSize + ui8AsciiSize) < ui8MaxSize)
@@ -345,8 +346,8 @@ uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, uint32_t
                 ui8_currentDataSize += ui8AsciiSize;
 
                 // Handle all indices
-                psRsp->sTransferData.ui32DatLen--;
-                *pui32DataIdx++;
+                psResponseControl->sRsp.sTransferData.ui32DatLen--;
+                psResponseControl->ui32DataIdx++;
                 pui8Buf += ui8AsciiSize;
 
                 if (ui8MaxSize > ui8_currentDataSize)

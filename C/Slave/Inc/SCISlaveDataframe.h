@@ -20,6 +20,7 @@
 
 #include "SCICommon.h"
 #include "SCITransferCommon.h"
+#include "SCISlaveTransfer.h"
 
 /******************************************************************************
  * Defines
@@ -49,9 +50,9 @@ teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8Buf, uint8_t ui8StringSize,
  * @param response      Structure holding the response information.
  * @returns size of the generated message string.
  */
-uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, bool bFirstPacketNotSent, bool bOngoing, uint32_t *pui32DataIdx, tsRESPONSE *psRsp);
+uint8_t SCISlaveResponseBuilder(uint8_t *pui8Buf, tsRESPONSECONTROL *psResponseControl);
 
-uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, uint32_t *pui32DataIdx, tsRESPONSE *psRsp);
+uint8_t _SCIFillBufferWithValues(uint8_t * pui8Buf, uint8_t ui8MaxSize, tsRESPONSECONTROL *psResponseControl);
 
 
 #endif //_SCISLAVEDATAFRAME_H_

@@ -75,6 +75,7 @@ void SlaveTxCbBlocking(uint8_t* pui8Data, uint8_t ui8Size)
     else
     {
         memcpy(&cTxMsgBuf[ui8Idx], pui8Data, ui8Size);
+        ui8Idx += ui8Size;
     }
 
     for(uint8_t i = 0; i < ui8Size; i++)

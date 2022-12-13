@@ -80,12 +80,11 @@ void SCISlaveReceiveData (uint8_t ui8Data)
     SCIDataLinkReceiveTransfer(&sSciSlave.sDatalink, &sSciSlave.sRxFIFO, ui8Data);
 }
 
-
 //=============================================================================
 void SCISlaveStatemachine (void)
 {
     // Check the lower level datalink states and set the protocol state accordingly
-    if (sSciSlave.e_state > ePROTOCOL_ERROR)
+    if (sSciSlave.e_state > ePROTOCOL_ERROR && sSciSlave.e_state != ePROTOCOL_SENDING)
     {
         // Datalink state dependend Protocol states
         switch(sSciSlave.sDatalink.rState)
@@ -111,7 +110,7 @@ void SCISlaveStatemachine (void)
             {
                 uint8_t *   pui8Buf;
                 tsREQUEST    sReq = tsREQUEST_DEFAULTS;
-                tsRESPONSE   sRsp = tsRESPONSE_DEFAULTS; 
+                // tsRESPONSE   sRsp = tsRESPONSE_DEFAULTS; 
                 uint8_t     ui8_msgSize = readBuf(&sSciSlave.sRxFIFO, &pui8Buf);
                 teSCI_SLAVE_ERROR  eError = eSCI_SLAVE_ERROR_NONE;
 
@@ -119,31 +118,26 @@ void SCISlaveStatemachine (void)
                 eError = SCISlaveRequestParser(pui8Buf, ui8_msgSize, &sReq);
 
                 // Take over command number and type
-                sRsp.i16Num = sReq.i16Num;
-                sRsp.eReqType = sReq.eReqType;
+                SCISlaveTransferInitiateResponse(&sSciSlave.sSciTransfer, sReq.i16Num, sReq.eReqType);
 
                 // Execute the command
                 if (eError == eSCI_SLAVE_ERROR_NONE)
-                    eError = SCIProcessRequest(&sSciSlave.sSciTransfer, &sSciSlave.sVarAccess, sReq, &sRsp);
+                    eError = SCISlaveTransferProcessRequest(&sSciSlave.sSciTransfer, &sSciSlave.sVarAccess, sReq);
 
                 // If there was an SCI error, return the error number with offset
                 if(eError != eSCI_SLAVE_ERROR_NONE)
-                    sRsp.sTransferData.ui16Error = GET_SCI_ERROR_NUMBER((uint16_t)eError);
+                    SCISlaveTransferSetError(&sSciSlave.sSciTransfer, GET_SCI_ERROR_NUMBER((uint16_t)eError));
 
 
                 flushBuf(&sSciSlave.sTxFIFO);
                 
                 // "Put" the date into the tx buffer
                 pui8Buf = sSciSlave.ui8TxBuffer;
-                increaseBufIdx(&sSciSlave.sTxFIFO, SCISlaveResponseBuilder( pui8Buf,
-                                                                            sSciSlave.sSciTransfer.sResponseControl.ui8ControlBits.firstPacketNotSent,
-                                                                            sSciSlave.sSciTransfer.sResponseControl.ui8ControlBits.ongoing,
-                                                                            &sSciSlave.sSciTransfer.sResponseControl.ui32DataIdx,
-                                                                            &sRsp));
+                increaseBufIdx(&sSciSlave.sTxFIFO, SCISlaveResponseBuilder( pui8Buf, &sSciSlave.sSciTransfer.sResponseControl));
 
                 // Reset the ongoing flag when no data is left to transmit
                 if (sSciSlave.sSciTransfer.sResponseControl.sRsp.sTransferData.ui32DatLen == 0)
-                    clearResponseControl(&sSciSlave.sSciTransfer);
+                    SCISlaveTransferClearResponseControl(&sSciSlave.sSciTransfer);
 
                 /// @todo Error handling -> Message too long
 
