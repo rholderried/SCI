@@ -1,0 +1,14 @@
+% Font packages
+\usepackage{tikz}
+\usepackage[latin1]{inputenc}
+\usepackage{amsmath,amsthm,amssymb,amsfonts}
+\usepackage{color}
+\usepackage{sfmath}         % Enable sfmath for math fonts (cmbright does not work properly in TexText)
+\renewcommand{\ttdefault}{cmtt}   % Reset TT default, because cmtl is not defined in bold
+\newcommand{\wye}{\mathbin{\tikz[x=1ex,y=1ex]{\draw[line width=.1ex] (0,0)--(45:0.55)--++(-45:0.55) (45:0.55)--++(0,0.55);}}} % Star configuration symbol
+\usepackage[family]{frutiger} % Overwrite other defaults with frutiger
+\usepackage[T1]{fontenc}
+
+
+
+
