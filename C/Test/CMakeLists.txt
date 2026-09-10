@@ -14,6 +14,7 @@ add_executable(sci_tests
     VariablesAndCommands.c
     gtest/SlaveTests.cpp
     gtest/MasterTestCallbacks.c
+    gtest/RoundTripTests.cpp
 )
 
 target_include_directories(sci_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
