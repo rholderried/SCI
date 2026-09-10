@@ -44,4 +44,25 @@ TEST_F(SlaveTest, PollVarUI8) {
     EXPECT_EQ(0, memcmp(expect, cTxMsgBuf, sizeof(expect)));
 }
 
+TEST_F(SlaveTest, PollVarUI16) {
+    uint8_t msg[]    = {0x02, '4', '?', 0x03};
+    uint8_t expect[] = {0x02, '4', '?', 'A', 'C', 'K', ';', '8', '6', 'E', '6', 0x03};
+    PumpSlave(msg, sizeof(msg));
+    EXPECT_EQ(0, memcmp(expect, cTxMsgBuf, sizeof(expect)));
+}
+
+TEST_F(SlaveTest, PollVarI32) {
+    uint8_t msg[]    = {0x02, '5', '?', 0x03};
+    uint8_t expect[] = {0x02, '5', '?', 'A', 'C', 'K', ';', 'F', 'A', 'C', 'B', '3', 'B', '0', '3', 0x03};
+    PumpSlave(msg, sizeof(msg));
+    EXPECT_EQ(0, memcmp(expect, cTxMsgBuf, sizeof(expect)));
+}
+
+TEST_F(SlaveTest, PollVarF32) {
+    uint8_t msg[]    = {0x02, '1', '?', 0x03};
+    uint8_t expect[] = {0x02, '1', '?', 'A', 'C', 'K', ';', '4', '0', '1', '6', 'C', '8', 'B', '4', 0x03};
+    PumpSlave(msg, sizeof(msg));
+    EXPECT_EQ(0, memcmp(expect, cTxMsgBuf, sizeof(expect)));
+}
+
 }  // namespace
