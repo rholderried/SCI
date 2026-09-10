@@ -45,6 +45,7 @@ bool SCITransferStart (tsSCI_TRANSFER *psSciTransfer, teREQUEST_TYPE eReqType, i
         return false;
 
     psSciTransfer->sTransferInfo.sReq = sReq;
+    return true;
 }
 
 bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
