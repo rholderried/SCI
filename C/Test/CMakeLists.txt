@@ -21,4 +21,6 @@ target_include_directories(sci_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(sci_tests PRIVATE sci gtest_main)
 
 include(GoogleTest)
-gtest_discover_tests(sci_tests)
+gtest_discover_tests(sci_tests
+    PROPERTIES LABELS "sci"
+)
