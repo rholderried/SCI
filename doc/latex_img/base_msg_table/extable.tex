@@ -15,15 +15,15 @@
 % \end{array}
 % \end{aligned}
 
-\begin{tabular}{|c|c|c|c|c|c|}
+\begin{tabular}{|c|c|c|c|c|c|c|}
     \hline
-    \multicolumn{6}{|c|}{Basic Request Format}\\
+    \multicolumn{7}{|c|}{Basic Request Format}\\
     \hline
-    STX (0x02) & <Command Identifier> & <Data> & ETX (0x03)& &\\
+    STX (0x02) & <Address> & <Transmission Identifier> & <Data> & ETX (0x03)& \multicolumn{2}{|c|}{}\\
     \hline
-    \multicolumn{6}{|c|}{Basic Response Format}\\
+    \multicolumn{7}{|c|}{Basic Response Format}\\
     \hline
-    STX (0x02)& <Command Identifier> & <Acknowledge> & ; & <Data> & ETX (0x03)\\
+    STX (0x02)& <Address> & <Transmission Identifier> & <Acknowledge> & ; & <Data> & ETX (0x03)\\
     \hline
 \end{tabular}
 \end{document}

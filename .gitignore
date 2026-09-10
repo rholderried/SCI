@@ -3,3 +3,6 @@ doc/html
 Doxyfile
 .vscode
 __pycache__
+*.synctex.gz
+*.log
+*.aux
