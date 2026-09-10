@@ -2,16 +2,23 @@
  * \file SCIconfig.h
  * \author Roman Holderried
  *
- * \brief Request - Response protocol functionality.
- * 
- * This serial protocol has been initially written for the MMX heater controller
- * module. It provides data read/write access and a command interface to the 
- * application.
+ * \brief SCI configuration owned by the C/Test GoogleTest suite.
+ *
+ * This header configures buffer sizes, var/command struct sizes, and other
+ * compile-time SCI parameters used ONLY by the C/Test GoogleTest suite
+ * (VariablesAndCommands.c, TestCallbacks.c, gtest/*.cpp). It is NOT a
+ * generic library default — SCI is platform independent and every
+ * integration is expected to supply its own SCIconfig.h. See
+ * C/config/SCIconfig_Template.h for a documented starting point to copy
+ * into your own project.
  *
  * <b> History </b>
- * 	- 2022-01-13 - File creation 
+ * 	- 2022-01-13 - File creation (as C/config/SCIconfig.h)
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
+ *  - 2026-09-10 - Split off as C/Test/config/SCIconfig.h, the GoogleTest
+ *                 suite's own configuration; C/config/SCIconfig.h became a
+ *                 template (see C/config/SCIconfig_Template.h).
  *****************************************************************************/
 
 #ifndef _SCICONFIG_H_

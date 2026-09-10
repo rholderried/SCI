@@ -32,6 +32,19 @@ causes 'undefined behaviour'. Whether the code works as intended is therefore de
 on the compiler. It has been proven to work on several platforms though, including STM32 
 and Microchip PIC processors, as well as the GNU compiler collection.
 
+### Configuration
+
+SCI has no single fixed configuration. Every source file includes an
+unqualified `SCIconfig.h` and expects the integrating project to supply it
+via the build's include path — buffer sizes, the size of the var struct, the
+EEPROM addressing mode, and similar target/application-specific values all
+live there. `C/config/SCIconfig_Template.h` is a documented starting point:
+copy it into your project, rename it to `SCIconfig.h`, adjust the values,
+and point your build at the containing directory. The C/CMake test suite in
+this repo (`C/Test`) is one example integration — it keeps its own copy at
+`C/Test/config/SCIconfig.h`, wired in through the `SCI_CONFIG_DIR` CMake
+variable in `C/CMakeLists.txt`.
+
 ## Layered design
 
 The protocol is currently designed based on four different layers:
