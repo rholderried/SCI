@@ -7,6 +7,16 @@
  * <b> History </b>
  * 	- 2022-11-21 - File creation -
  *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
+ *  - 2026-09-11 - Replaced the per-field malloc()/free() at the "control
+ *                 number after the acknowledge" site in
+ *                 SCIMasterResponseParser() with a fixed
+ *                 MAX_NUMBER_OF_PARAMETER_DIGITS-sized stack buffer.
+ *                 Values longer than the bound (a GetVar return value, a
+ *                 Command's data length, or a Command's error number) are
+ *                 now rejected outright with the new
+ *                 eSCI_MASTER_ERROR_PARAMETER_TOO_LONG (no copy, no
+ *                 truncation) instead of allocating heap memory sized to
+ *                 the untrusted wire length.
  *****************************************************************************/
 
 /******************************************************************************
@@ -197,7 +207,7 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
     {
         uint8_t j = 0;
         tuREQUESTVALUE uNum = {.ui32_hex = 0};
-        uint8_t *pui8NumStr;
+        uint8_t pui8NumStr[MAX_NUMBER_OF_PARAMETER_DIGITS + 1];
 
         while (j < i16BytesToGo)
         {
@@ -207,7 +217,14 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
             j++;
         }
 
-        pui8NumStr = (uint8_t*)malloc(j+1);
+        // Reject outright (no copy, no truncation) if this field's
+        // wire-format character count exceeds the configured bound - see
+        // MAX_NUMBER_OF_PARAMETER_DIGITS in SCITransferCommon.h. The scan
+        // above still walks the field's real length into j regardless of
+        // the outcome, since j also feeds the index math further below.
+        if (j > MAX_NUMBER_OF_PARAMETER_DIGITS)
+            return eSCI_MASTER_ERROR_PARAMETER_TOO_LONG;
+
         memcpy(pui8NumStr,&pui8Buf[i],j);
         pui8NumStr[j] = '\0';
 
@@ -217,8 +234,6 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
         #else
             uNum.f_float = atof((char*)pui8NumStr);
         #endif
-
-        free(pui8NumStr);
 
         // Assign the number to the data field
         

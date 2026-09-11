@@ -16,6 +16,7 @@ add_executable(sci_tests
     gtest/SlaveErrorTests.cpp
     gtest/SlaveParameterLengthTests.cpp
     gtest/MasterTestCallbacks.c
+    gtest/MasterDataframeParserTests.cpp
     gtest/RoundTripTests.cpp
     gtest/RoundTripSetVarTests.cpp
     gtest/RoundTripCommandTests.cpp
