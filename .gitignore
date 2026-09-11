@@ -6,5 +6,5 @@ __pycache__
 *.synctex.gz
 *.log
 *.aux
-C/build/
+build/
 .hermes/plans
