@@ -409,7 +409,7 @@ uint16_t GetEEPROMAddress(tsVAR_ACCESS* pVarAccess, int16_t i16VarNum)
 //=============================================================================
 teSCI_SLAVE_ERROR GetVar(tsVAR_ACCESS* pVarAccess, tsSCIVAR* pVar, int16_t i16VarNum)
 {
-    if ((i16VarNum > 0 && i16VarNum))    
+    if ((i16VarNum > 0 && i16VarNum < SIZE_OF_VAR_STRUCT))    
     {
         *pVar = pVarAccess->pVarStruct[i16VarNum - 1];
         return eSCI_SLAVE_ERROR_NONE;
