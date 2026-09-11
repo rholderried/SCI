@@ -14,6 +14,7 @@ add_executable(sci_tests
     VariablesAndCommands.c
     gtest/SlaveTests.cpp
     gtest/SlaveErrorTests.cpp
+    gtest/SlaveParameterLengthTests.cpp
     gtest/MasterTestCallbacks.c
     gtest/RoundTripTests.cpp
     gtest/RoundTripSetVarTests.cpp

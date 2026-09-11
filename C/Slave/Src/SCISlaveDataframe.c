@@ -7,6 +7,16 @@
  * <b> History </b>
  * 	- 2022-11-21 - File creation
  *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
+ *  - 2026-09-11 - Replaced the per-value malloc()/free() in the
+ *                 SCISlaveRequestParser() value-parsing loop with a fixed
+ *                 MAX_NUMBER_OF_PARAMETER_DIGITS-sized stack buffer.
+ *                 Values longer than the bound are rejected outright with
+ *                 the new eSCI_SLAVE_ERROR_REQUEST_VALUE_TOO_LONG (no
+ *                 copy, no truncation) instead of allocating heap memory
+ *                 sized to the untrusted wire length. Also fixed a
+ *                 pre-existing typo on the VALUE_MODE_FLOAT branch
+ *                 (`psReq->valArr` -> `psReq->uValArr`, the real member
+ *                 name) that would have failed to compile.
  *****************************************************************************/
 
 /******************************************************************************
@@ -115,7 +125,7 @@ teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8Buf, uint8_t ui8StringSize,
         uint8_t j = 1;
         uint8_t ui8NumOfVals = 0;
         uint8_t ui8_valueLen = 0;
-        uint8_t *p_valStr = NULL;
+        uint8_t p_valStr[MAX_NUMBER_OF_PARAMETER_DIGITS + 1];
 
         while (ui8NumOfVals <= MAX_NUM_REQUEST_VALUES)
         {
@@ -131,9 +141,13 @@ teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8Buf, uint8_t ui8StringSize,
                 ui8_valueLen++;
             }
 
-            p_valStr = (uint8_t*)malloc(ui8_valueLen + 1);
+            // Reject outright (no copy, no truncation) if this value's
+            // wire-format character count exceeds the configured bound -
+            // see MAX_NUMBER_OF_PARAMETER_DIGITS in SCITransferCommon.h.
+            if (ui8_valueLen > MAX_NUMBER_OF_PARAMETER_DIGITS)
+                return eSCI_SLAVE_ERROR_REQUEST_VALUE_TOO_LONG;
 
-            // copy the number string into new array
+            // copy the number string into the fixed-size array
             memcpy(p_valStr, &pui8Buf[i + j - ui8_valueLen], ui8_valueLen);
 
             p_valStr[ui8_valueLen] = '\0';
@@ -142,10 +156,8 @@ teSCI_SLAVE_ERROR SCISlaveRequestParser(uint8_t* pui8Buf, uint8_t ui8StringSize,
             if(!strToHex(p_valStr, &psReq->uValArr[ui8NumOfVals - 1].ui32_hex))
                 return eSCI_SLAVE_ERROR_REQUEST_VALUE_CONVERSION_FAILED;
             #else
-            psReq->valArr[ui8NumOfVals - 1].f_float = atof((char*)p_valStr);
+            psReq->uValArr[ui8NumOfVals - 1].f_float = atof((char*)p_valStr);
             #endif
-
-            free(p_valStr);
 
             if (j == ui8_valStrLen)
                 break;
