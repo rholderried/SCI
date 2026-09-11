@@ -85,4 +85,27 @@ TEST(MasterDataframeParserTest, GetVarValueOverLengthLimitIsRejected) {
     EXPECT_EQ(eSCI_MASTER_ERROR_PARAMETER_TOO_LONG, eError);
 }
 
+// COMMAND SUCCESS_DATA response carrying 3 values, matching the exact wire
+// shape RoundTripCommandTests.cpp's CommandDataRoundTrip proves the Slave
+// really emits (<num>:DAT;<count>;<v1>,<v2>,<v3>) - but with the first
+// value stretched to 9 hex characters (one over
+// MAX_NUMBER_OF_PARAMETER_DIGITS) to exercise the per-value-loop rejection
+// path. The boundary case (all three values at exactly 8 characters) is
+// already covered by CommandDataRoundTrip itself and is deliberately not
+// duplicated here.
+TEST(MasterDataframeParserTest, CommandMultiValueOverlongFirstValueIsRejected) {
+    uint8_t buf[] = {
+        '2',':','D','A','T',';','3',';',
+        '1','1','2','2','3','3','4','4','5', ',',
+        '2','2','2','2','2','2','2','2', ',',
+        '3','3','3','3','3','3','3','3'
+    };
+    tsRESPONSE sRsp = tsRESPONSE_DEFAULTS;
+    uint8_t ui8MsgDataLen = 0;
+
+    teSCI_MASTER_ERROR eError = SCIMasterResponseParser(buf, sizeof(buf), &ui8MsgDataLen, &sRsp);
+
+    EXPECT_EQ(eSCI_MASTER_ERROR_PARAMETER_TOO_LONG, eError);
+}
+
 }  // namespace

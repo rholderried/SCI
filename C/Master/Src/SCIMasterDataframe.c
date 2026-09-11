@@ -17,6 +17,11 @@
  *                 eSCI_MASTER_ERROR_PARAMETER_TOO_LONG (no copy, no
  *                 truncation) instead of allocating heap memory sized to
  *                 the untrusted wire length.
+ *                 Also replaced the per-value malloc()/free() in
+ *                 SCIMasterResponseParser()'s comma-separated-value loop
+ *                 (a Command's multi-value DAT response) with the same
+ *                 fixed MAX_NUMBER_OF_PARAMETER_DIGITS-sized stack buffer
+ *                 and the same reject-outright behavior.
  *****************************************************************************/
 
 /******************************************************************************
@@ -289,7 +294,7 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
         uint8_t j = 0;
         uint8_t ui8_numOfVals = 0;
         uint8_t ui8_valueLen = 0;
-        uint8_t *p_valStr = NULL;
+        uint8_t p_valStr[MAX_NUMBER_OF_PARAMETER_DIGITS + 1];
 
         while (ui8_numOfVals < MAX_NUM_RESPONSE_VALUES)
         {
@@ -305,9 +310,13 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
                 ui8_valueLen++;
             }
 
-            p_valStr = (uint8_t*)malloc(ui8_valueLen + 1);
+            // Reject outright (no copy, no truncation) if this value's
+            // wire-format character count exceeds the configured bound -
+            // see MAX_NUMBER_OF_PARAMETER_DIGITS in SCITransferCommon.h.
+            if (ui8_valueLen > MAX_NUMBER_OF_PARAMETER_DIGITS)
+                return eSCI_MASTER_ERROR_PARAMETER_TOO_LONG;
 
-            // copy the number string into new array
+            // copy the number string into the fixed-size array
             memcpy(p_valStr, &pui8Buf[i + j - ui8_valueLen], ui8_valueLen);
 
             p_valStr[ui8_valueLen] = '\0';
@@ -318,8 +327,6 @@ teSCI_MASTER_ERROR SCIMasterResponseParser(uint8_t* pui8Buf, uint8_t ui8Datafram
             #else
             psRsp->sTransferData.puRespVals[ui8_numOfVals - 1].f_float = atof((char*)p_valStr);
             #endif
-
-            free(p_valStr);
 
             if (j == i16BytesToGo)
                 break;
