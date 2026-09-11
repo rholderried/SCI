@@ -57,16 +57,14 @@ TEST_F(SlaveErrorTest, UpstreamWithoutPriorCommandReturnsError) {
     // Fresh SetUp() guarantees no command has ever been processed, so
     // tsRESPONSECONTROL_DEFAULTS still holds: ui8ControlBits.upstream == false.
     //
-    // Note on SCISlaveTransferProcessRequest()'s UPSTREAM case: it checks
-    //   sResponseControl.sRsp.i16Num == sReq.i16Num && ui8ControlBits.upstream == true
-    // but SCISlave.c always calls SCISlaveTransferInitiateResponse() with the
-    // *current* request's number/type immediately before ProcessRequest() runs,
-    // so sResponseControl.sRsp.i16Num is unconditionally overwritten to equal
-    // sReq.i16Num for every request -- the number-equality half of that check
-    // is therefore always trivially true and the "upstream" control bit is the
-    // only condition that can actually fail. With no prior command, that bit
-    // is false, so this trips eSCI_SLAVE_ERROR_UPSTREAM_NOT_INITIATED (enum
-    // value 11 -> wire error number 0x100 + 11 = 0x10B).
+    // SCISlaveTransferProcessRequest()'s UPSTREAM case checks
+    //   sResponseControl.i16TransferCmdNum == sReq.i16Num && ui8ControlBits.upstream == true
+    // (see SCISlaveTransfer.c/.h - i16TransferCmdNum tracks which command
+    // actually granted the transfer, fixed 2026-09-11; the number check used
+    // to be dead code before that fix). With no prior command,
+    // ui8ControlBits.upstream is false, so this trips
+    // eSCI_SLAVE_ERROR_UPSTREAM_NOT_INITIATED (enum value 11 -> wire error
+    // number 0x100 + 11 = 0x10B) regardless of the request number.
     uint8_t msg[]    = {0x02, '1', '>', 0x03};
     uint8_t expect[] = {0x02, '1', '>', 'E', 'R', 'R', ';', '1', '0', 'B', 0x03};
 
@@ -87,15 +85,15 @@ TEST_F(SlaveErrorTest, UpstreamAfterNonUpstreamCommandReturnsError) {
     ASSERT_EQ(0, memcmp(cmdExpect, cTxMsgBuf, sizeof(cmdExpect)))
         << "precondition failed: Command 3 did not ACK as expected";
 
-    // As explained in UpstreamWithoutPriorCommandReturnsError above, the
-    // request-number check in the UPSTREAM branch is a no-op (it always
-    // compares sReq.i16Num against itself), so it is *not* possible to
-    // trigger eSCI_SLAVE_ERROR_UPSTREAM_NOT_INITIATED via a genuine
-    // number mismatch against a prior upstream-granting command -- any
-    // upstream number will be accepted as long as the upstream bit is
-    // set. This test instead exercises the only condition that actually
-    // gates the error: issuing an Upstream request after a command that
-    // completed without granting an upstream transfer.
+    // This test exercises the "upstream bit never set" path: issuing an
+    // Upstream request after a command that completed without granting an
+    // upstream transfer. See
+    // RoundTripSequenceTests.cpp's UpstreamRequestWithMismatchedNumberIsRejected
+    // for the sibling case (a genuine number mismatch against a command
+    // that DID grant an upstream transfer) - that case used to be
+    // impossible to construct here because the number check was dead code;
+    // it's now fixed and covered there via direct
+    // SCISlaveTransferProcessRequest() calls instead of raw byte injection.
     uint8_t upMsg[]    = {0x02, '3', '>', 0x03};
     uint8_t upExpect[] = {0x02, '3', '>', 'E', 'R', 'R', ';', '1', '0', 'B', 0x03};
 
