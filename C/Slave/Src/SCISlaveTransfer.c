@@ -9,6 +9,15 @@
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *  - 2022-08-23 - V0.6.0: Upstream data gets not converted into ASCII data
  *  - 2022-12-11 - Adapted code for unified master/slave repo structure.
+ *  - 2026-09-11 - Fixed dead-code number comparisons in the COMMAND
+ *                 (bNewCmd) and UPSTREAM cases: both used to compare
+ *                 against sResponseControl.sRsp.i16Num, which
+ *                 SCISlaveTransferInitiateResponse() unconditionally
+ *                 overwrites from every incoming request right before this
+ *                 function runs, making the comparison always trivially
+ *                 true. Now tracked separately via the new
+ *                 tsRESPONSECONTROL.i16TransferCmdNum field. Found via SCI
+ *                 round-trip test expansion (RoundTripSequenceTests.cpp).
  *****************************************************************************/
 
 /******************************************************************************
@@ -121,8 +130,12 @@ teSCI_SLAVE_ERROR SCISlaveTransferProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfe
             {
                 teREQUEST_ACKNOWLEDGE eReqAck = eREQUEST_ACK_STATUS_UNKNOWN;
                 // tsTRANSFER_DATA sTransferData = tsTRANSFER_DATA_DEFAULTS;
-                // Determine if a new command has been sent or if the ongoing command is to be processed
-                bool bNewCmd = psTransfer->sResponseControl.ui8ControlBits.ongoing == false || (psTransfer->sResponseControl.sRsp.i16Num != sReq.i16Num);
+                // Determine if a new command has been sent or if the ongoing command is to be processed.
+                // Compare against i16TransferCmdNum (stamped below only when a request is
+                // recognized as genuinely new), NOT sRsp.i16Num: SCISlaveTransferInitiateResponse()
+                // unconditionally overwrites sRsp.i16Num from every incoming request before this
+                // runs, so sRsp.i16Num == sReq.i16Num is always true and can't detect a real change.
+                bool bNewCmd = psTransfer->sResponseControl.ui8ControlBits.ongoing == false || (psTransfer->sResponseControl.i16TransferCmdNum != sReq.i16Num);
 
                 if (bNewCmd)
                 {
@@ -150,6 +163,9 @@ teSCI_SLAVE_ERROR SCISlaveTransferProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfe
                     // Fill the response control struct
                     psTransfer->sResponseControl.ui8ControlBits.firstPacketNotSent  = true;
                     psTransfer->sResponseControl.ui32DataIdx                        = 0;
+                    // Record which command number owns this (possibly ongoing/upstream)
+                    // transfer, for the bNewCmd/upstream-number checks above and below.
+                    psTransfer->sResponseControl.i16TransferCmdNum                  = sReq.i16Num;
                     
                     // Set the control bits if a data transfer has been initiated
                     psTransfer->sResponseControl.ui8ControlBits.ongoing = 
@@ -172,8 +188,10 @@ teSCI_SLAVE_ERROR SCISlaveTransferProcessRequest(tsSCI_TRANSFER_SLAVE *psTransfe
         
         case eREQUEST_TYPE_UPSTREAM:
 
-            // Number must match with the previously sent command
-            if (psTransfer->sResponseControl.sRsp.i16Num == sReq.i16Num && psTransfer->sResponseControl.ui8ControlBits.upstream == true)
+            // Number must match the COMMAND that actually granted the upstream transfer.
+            // Compare against i16TransferCmdNum, not sRsp.i16Num - see the COMMAND case
+            // comment above for why the latter is always trivially equal to sReq.i16Num.
+            if (psTransfer->sResponseControl.i16TransferCmdNum == sReq.i16Num && psTransfer->sResponseControl.ui8ControlBits.upstream == true)
             {
                 psTransfer->sResponseControl.sRsp.eReqAck   = eREQUEST_ACK_STATUS_SUCCESS;
                 // psRsp->sTransferData          = psTransfer->sResponseControl.sRsp.sTransferData;

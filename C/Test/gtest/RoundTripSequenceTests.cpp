@@ -4,7 +4,7 @@
  *
  * \brief GoogleTest sequencing/statefulness round-trip tests.
  *
- * Two concerns are covered here:
+ * Three concerns are covered here:
  *
  *  1. RoundTripSequenceTest.GetVarThenSetVarThenCommandSequenceRoundTrip -
  *     drives three independent, fully-completed Master/Slave transactions
@@ -15,62 +15,52 @@
  *     state leaking between transactions in the Slave's
  *     sResponseControl/sTransferInfo structures.
  *
- *  2. SlaveTransferProcessRequestTest.NewCommandNumberIsNotRecognizedAsFreshMidTransfer -
- *     a narrower, Slave-only unit test of the "new command vs. continuing
- *     command" branch in SCISlaveTransfer.c's eREQUEST_TYPE_COMMAND case
- *     (the `bNewCmd` check). This exercises
- *     SCISlaveTransferProcessRequest() directly against a
+ *  2. SlaveTransferProcessRequestTest - narrower, Slave-only unit tests of
+ *     the "new command/upstream vs. continuing transfer" branches in
+ *     SCISlaveTransfer.c's eREQUEST_TYPE_COMMAND and eREQUEST_TYPE_UPSTREAM
+ *     cases (the `bNewCmd` check and the upstream number-match check).
+ *     These exercise SCISlaveTransferProcessRequest() directly against a
  *     tsSCI_TRANSFER_SLAVE instance, rather than going through the full
  *     Master-driven round trip.
  *
- *     Rationale (documented limitation of the approach, see task context):
- *     the Master's own SCITransferControl() (SCIMasterTransfer.c) always
- *     fully drains one command's data - looping the SAME command number's
- *     request - before the public API could ever issue a different
- *     command number. There is therefore no way to reach the Slave's
- *     "different command number arrives while a previous command's data
- *     transfer is still ongoing" branch through a single coherent
- *     Master-driven flow (SCIRequestCommand() etc.), nor even through raw
- *     byte injection into SCISlaveReceiveData()/SCISlaveStatemachine():
- *     with this test suite's SCIconfig.h (TX_PACKET_LENGTH=128,
- *     MAX_NUM_RESPONSE_VALUES=10) every fixture command's SUCCESS_DATA
- *     payload (at most 10 values, ~90 ASCII bytes) fits into a single TX
- *     packet, so the Slave's response-builder step always clears the
- *     "ongoing" flag again within the very same statemachine cycle that
- *     set it - there is no multi-cycle window in which a raw follow-up
- *     request could observe ongoing==true for a still-incomplete transfer
- *     without editing the fixture data (out of scope for this task).
- *
- *     SCISlaveTransferProcessRequest() is called directly instead: this
- *     sets up the exact "ongoing==true, previous command's data not yet
- *     drained" state (mirroring the exact call sequence
+ *     Rationale (documented limitation of the approach): the Master's own
+ *     SCITransferControl() (SCIMasterTransfer.c) always fully drains one
+ *     command's data - looping the SAME command number's request - before
+ *     the public API could ever issue a different command number. There is
+ *     therefore no way to reach the Slave's "different command number
+ *     arrives while a previous command's data transfer is still ongoing"
+ *     branch through a single coherent Master-driven flow
+ *     (SCIRequestCommand() etc.), nor even through raw byte injection into
+ *     SCISlaveReceiveData()/SCISlaveStatemachine(): with this test suite's
+ *     SCIconfig.h (TX_PACKET_LENGTH=128, MAX_NUM_RESPONSE_VALUES=10) every
+ *     fixture command's SUCCESS_DATA payload (at most 10 values, ~90 ASCII
+ *     bytes) fits into a single TX packet, so the Slave's response-builder
+ *     step always clears the "ongoing" flag again within the very same
+ *     statemachine cycle that set it - there is no multi-cycle window in
+ *     which a raw follow-up request could observe ongoing==true for a
+ *     still-incomplete transfer without editing the fixture data (out of
+ *     scope for this task). SCISlaveTransferProcessRequest() is called
+ *     directly instead, mirroring the exact call sequence
  *     SCISlaveStatemachine() uses: SCISlaveTransferInitiateResponse()
- *     immediately before SCISlaveTransferProcessRequest() on every
- *     request), then issues a second request with a *different* command
- *     number on the same tsSCI_TRANSFER_SLAVE instance while that ongoing
- *     state is still present.
+ *     immediately before SCISlaveTransferProcessRequest() on every request.
  *
- *     UNEXPECTED FINDING (this test documents a real bug, it does not
- *     assert the "ideal" behavior): the second request is NOT treated as
- *     fresh. SCISlaveStatemachine() unconditionally calls
- *     SCISlaveTransferInitiateResponse(psTransfer, sReq.i16Num, ...)
- *     *before* SCISlaveTransferProcessRequest() runs, on every request -
- *     which overwrites psTransfer->sResponseControl.sRsp.i16Num to the
- *     incoming request's own number first. By the time bNewCmd evaluates
- *     `psTransfer->sResponseControl.sRsp.i16Num != sReq.i16Num`, both
- *     sides of that comparison are always the same request's number, so
- *     the comparison is dead code - it can never observe a "different"
- *     command number, and bNewCmd collapses to just `ongoing == false`.
- *     Concretely: a new command number arriving while `ongoing == true`
- *     is silently swallowed into the "continuing" branch - its callback
- *     is never invoked, and the response sent back still carries the
- *     PREVIOUS command's ack/data-length/upstream state (only
- *     firstPacketNotSent is cleared). This is the same class of dead
- *     "number equality" check already called out for the UPSTREAM branch
- *     in SlaveErrorTests.cpp's UpstreamAfterNonUpstreamCommandReturnsError
- *     comment - it affects COMMAND's bNewCmd the same way. Not fixed here
- *     (out of scope - this is a test-writing task), but pinned down by
- *     this test so a future fix has a regression test to flip green.
+ *     FIXED BUG (previously pinned here as a known issue, see git history
+ *     for the original test body): SCISlaveTransferInitiateResponse()
+ *     unconditionally stamps psTransfer->sResponseControl.sRsp.i16Num from
+ *     the *current* incoming request's own number, on every request,
+ *     before SCISlaveTransferProcessRequest() runs. The COMMAND case's
+ *     `bNewCmd` check and the UPSTREAM case's number-match check used to
+ *     compare against that same field - which is therefore always equal to
+ *     sReq.i16Num by construction and can never observe a genuine number
+ *     change. Fixed by tracking the owning command number separately (see
+ *     tsRESPONSECONTROL.i16TransferCmdNum in SCISlaveTransfer.h), which is
+ *     written only when a request is recognized as genuinely new and left
+ *     alone by continuation calls. The tests below now assert the
+ *     corrected behavior: a new command number arriving mid-transfer is
+ *     recognized as fresh (its own callback runs, its own response shape
+ *     is returned), the same command number continues the existing
+ *     transfer as before, and an Upstream request is only accepted when
+ *     its number matches the COMMAND that actually granted the transfer.
  ******************************************************************************/
 #include "RoundTripFixture.h"
 
@@ -203,8 +193,8 @@ TEST_F(RoundTripSequenceTest, GetVarThenSetVarThenCommandSequenceRoundTrip) {
 }
 
 /*******************************************************************************
- * Part 2: "new command number while a prior command's data transfer is
- * still ongoing" - Slave-only unit test of SCISlaveTransferProcessRequest().
+ * Part 2: "new command/upstream number while a prior transfer is still
+ * ongoing" - Slave-only unit tests of SCISlaveTransferProcessRequest().
  *
  * See the file-header comment for why this uses Option B (direct calls to
  * SCISlaveTransferProcessRequest() on a manually constructed
@@ -229,86 +219,122 @@ protected:
 // ui32DatLen == 3 and sets the "ongoing" control bit. A second request
 // then arrives for a DIFFERENT command number (3, testCmdPlain) while
 // that "ongoing" state is still in place (not yet drained/cleared) -
-// exactly as it would be mid-transfer in the real statemachine.
-//
-// This documents the actual (buggy) behavior found by reading
-// SCISlaveTransfer.c's bNewCmd check together with SCISlave.c's calling
-// sequence: see the file-header comment for the full explanation of why
-// the i16Num-mismatch half of `bNewCmd` is dead code. The second
-// request's DIFFERENT command number is NOT recognized as a fresh
-// command - it gets silently merged into command 2's still-ongoing
-// state (testCmdPlain's callback never runs; the response sent back
-// still reflects command 2's SUCCESS_DATA/ui32DatLen==3/ongoing state).
-TEST_F(SlaveTransferProcessRequestTest, NewCommandNumberIsNotRecognizedAsFreshMidTransfer) {
-    // Zero-initialize and set fields by name (equivalent to
-    // tsREQUEST_DEFAULTS, spelled out here since this test only cares
-    // about eReqType/i16Num/ui8ValArrLen).
+// exactly as it would be mid-transfer in the real statemachine. This must
+// be recognized as a genuinely new command: testCmdPlain's own callback
+// must run and its own response shape (plain SUCCESS, no data) must be
+// what's returned - not command 2's stale SUCCESS_DATA/ongoing state.
+TEST_F(SlaveTransferProcessRequestTest, NewCommandNumberIsRecognizedAsFreshMidTransfer) {
     tsREQUEST sReqFirst = {};
     sReqFirst.eReqType     = eREQUEST_TYPE_COMMAND;
     sReqFirst.i16Num       = 2;          // testCmdData
-    sReqFirst.ui8ValArrLen = 0;          // uValArr is a fixed array member - zero-initialized above, no assignment needed
+    sReqFirst.ui8ValArrLen = 0;
 
-    // SCISlave.c's statemachine always calls
-    // SCISlaveTransferInitiateResponse() to stamp the response's
-    // i16Num/eReqType from the incoming request immediately before
-    // SCISlaveTransferProcessRequest() runs - mirror that here since we're
-    // driving the transfer layer directly.
     SCISlaveTransferInitiateResponse(&sTransfer, sReqFirst.i16Num, sReqFirst.eReqType);
     teSCI_SLAVE_ERROR eError1 = SCISlaveTransferProcessRequest(&sTransfer, &sVarAccess, sReqFirst);
 
     ASSERT_EQ(eSCI_SLAVE_ERROR_NONE, eError1);
     ASSERT_TRUE(sTransfer.sResponseControl.ui8ControlBits.ongoing)
         << "Test setup assumption broken - testCmdData's SUCCESS_DATA response should mark the transfer ongoing";
-    EXPECT_EQ(2, sTransfer.sResponseControl.sRsp.i16Num);
     EXPECT_EQ(eREQUEST_ACK_STATUS_SUCCESS_DATA, sTransfer.sResponseControl.sRsp.eReqAck);
     EXPECT_EQ(3u, sTransfer.sResponseControl.sRsp.sTransferData.ui32DatLen);
     EXPECT_TRUE(sTransfer.sResponseControl.ui8ControlBits.firstPacketNotSent);
 
     // Second request: a DIFFERENT command number, arriving while the first
-    // command's "ongoing" data transfer state is still in place (not yet
-    // cleared by SCISlaveTransferClearResponseControl(), exactly as it
-    // would be mid-transfer in the real statemachine).
+    // command's "ongoing" data transfer state is still in place.
     tsREQUEST sReqSecond = {};
     sReqSecond.eReqType     = eREQUEST_TYPE_COMMAND;
     sReqSecond.i16Num       = 3;          // testCmdPlain - deliberately different from 2
-    sReqSecond.ui8ValArrLen = 0;          // uValArr is a fixed array member - zero-initialized above, no assignment needed
+    sReqSecond.ui8ValArrLen = 0;
 
     SCISlaveTransferInitiateResponse(&sTransfer, sReqSecond.i16Num, sReqSecond.eReqType);
     teSCI_SLAVE_ERROR eError2 = SCISlaveTransferProcessRequest(&sTransfer, &sVarAccess, sReqSecond);
 
     ASSERT_EQ(eSCI_SLAVE_ERROR_NONE, eError2);
-
-    // SCISlaveTransferInitiateResponse() unconditionally overwrote
-    // sRsp.i16Num to 3 (the *incoming* request's number) BEFORE
-    // ProcessRequest() ran, regardless of whether bNewCmd treated this as
-    // new or continuing - so this field alone can't distinguish the two
-    // cases here (see file header). The response ack/data-length/ongoing
-    // fields below are what actually reveal which branch executed.
     EXPECT_EQ(3, sTransfer.sResponseControl.sRsp.i16Num);
 
-    // bNewCmd's `sRsp.i16Num != sReq.i16Num` half never fires (dead code -
-    // see file header), so with ongoing==true, bNewCmd is false: the
-    // Slave treats this as a CONTINUATION of command 2, not a fresh
-    // command 3. testCmdPlain's callback is therefore never invoked, and
-    // the response still carries command 2's ack/data-length state.
-    EXPECT_EQ(eREQUEST_ACK_STATUS_SUCCESS_DATA, sTransfer.sResponseControl.sRsp.eReqAck)
-        << "Documents the discovered bug: command 2's SUCCESS_DATA ack leaks into command 3's response "
-           "because bNewCmd's i16Num check is dead code (see file header) - testCmdPlain's own "
-           "eREQUEST_ACK_STATUS_SUCCESS was never assigned.";
-    EXPECT_EQ(3u, sTransfer.sResponseControl.sRsp.sTransferData.ui32DatLen)
-        << "Documents the discovered bug: command 2's leftover data length (3) is still present - "
-           "testCmdPlain (which would set ui32DatLen to 0) was never actually invoked.";
-    // Continuation branch explicitly sets firstPacketNotSent = false (see
-    // SCISlaveTransfer.c's `else` arm of `if (bNewCmd)`), unlike a fresh
-    // command which would set it true.
+    // testCmdPlain's own response shape must win: plain SUCCESS, zero data,
+    // fresh-command control bits - not command 2's leftover state.
+    EXPECT_EQ(eREQUEST_ACK_STATUS_SUCCESS, sTransfer.sResponseControl.sRsp.eReqAck)
+        << "testCmdPlain's callback must actually run and set its own ack";
+    EXPECT_EQ(0u, sTransfer.sResponseControl.sRsp.sTransferData.ui32DatLen)
+        << "testCmdPlain sets ui32DatLen to 0 - command 2's leftover length must not survive";
+    EXPECT_TRUE(sTransfer.sResponseControl.ui8ControlBits.firstPacketNotSent)
+        << "A genuinely fresh command must set firstPacketNotSent, not clear it";
+    EXPECT_FALSE(sTransfer.sResponseControl.ui8ControlBits.ongoing)
+        << "testCmdPlain sets no data - the ongoing bit from command 2 must not survive";
+}
+
+// Companion to the test above: the SAME command number arriving while its
+// own data transfer is still ongoing must still be treated as a
+// continuation, not spuriously flagged as a new command.
+TEST_F(SlaveTransferProcessRequestTest, SameCommandNumberContinuesOngoingTransfer) {
+    tsREQUEST sReqFirst = {};
+    sReqFirst.eReqType     = eREQUEST_TYPE_COMMAND;
+    sReqFirst.i16Num       = 2;          // testCmdData
+    sReqFirst.ui8ValArrLen = 0;
+
+    SCISlaveTransferInitiateResponse(&sTransfer, sReqFirst.i16Num, sReqFirst.eReqType);
+    ASSERT_EQ(eSCI_SLAVE_ERROR_NONE, SCISlaveTransferProcessRequest(&sTransfer, &sVarAccess, sReqFirst));
+    ASSERT_TRUE(sTransfer.sResponseControl.ui8ControlBits.ongoing);
+
+    // Same command number (2) arrives again while still ongoing - e.g. the
+    // Master re-requesting the next chunk of the same command's data.
+    tsREQUEST sReqRepeat = {};
+    sReqRepeat.eReqType     = eREQUEST_TYPE_COMMAND;
+    sReqRepeat.i16Num       = 2;
+    sReqRepeat.ui8ValArrLen = 0;
+
+    SCISlaveTransferInitiateResponse(&sTransfer, sReqRepeat.i16Num, sReqRepeat.eReqType);
+    teSCI_SLAVE_ERROR eError = SCISlaveTransferProcessRequest(&sTransfer, &sVarAccess, sReqRepeat);
+
+    ASSERT_EQ(eSCI_SLAVE_ERROR_NONE, eError);
+    // Continuation branch explicitly sets firstPacketNotSent = false and
+    // does not re-run the command callback or touch the ack/data-length
+    // fields.
     EXPECT_FALSE(sTransfer.sResponseControl.ui8ControlBits.firstPacketNotSent)
-        << "Documents the discovered bug: firstPacketNotSent was cleared as a continuation would, "
-           "not set as a genuinely fresh command would.";
-    // ongoing bit is untouched by the continuation branch, so it still
-    // reflects command 2's not-yet-fully-drained data transfer.
-    EXPECT_TRUE(sTransfer.sResponseControl.ui8ControlBits.ongoing)
-        << "Documents the discovered bug: the ongoing bit still reflects command 2's data transfer - "
-           "command 3 (testCmdPlain, which sets no data) was never actually run.";
+        << "Same command number mid-transfer must be treated as a continuation";
+    EXPECT_EQ(eREQUEST_ACK_STATUS_SUCCESS_DATA, sTransfer.sResponseControl.sRsp.eReqAck);
+    EXPECT_EQ(3u, sTransfer.sResponseControl.sRsp.sTransferData.ui32DatLen);
+    EXPECT_TRUE(sTransfer.sResponseControl.ui8ControlBits.ongoing);
+}
+
+// UPSTREAM sibling of the same bug: an Upstream request whose number
+// doesn't match the COMMAND that actually granted the transfer must be
+// rejected. Previously impossible to construct as a genuine mismatch (see
+// SlaveErrorTests.cpp) because the check compared against a field that was
+// always overwritten to equal the incoming request's own number.
+TEST_F(SlaveTransferProcessRequestTest, UpstreamRequestWithMismatchedNumberIsRejected) {
+    // Command 1 (testCmdUpstream) grants an upstream transfer under number 1.
+    tsREQUEST sCmdReq = {};
+    sCmdReq.eReqType = eREQUEST_TYPE_COMMAND;
+    sCmdReq.i16Num   = 1;
+
+    SCISlaveTransferInitiateResponse(&sTransfer, sCmdReq.i16Num, sCmdReq.eReqType);
+    ASSERT_EQ(eSCI_SLAVE_ERROR_NONE, SCISlaveTransferProcessRequest(&sTransfer, &sVarAccess, sCmdReq));
+    ASSERT_TRUE(sTransfer.sResponseControl.ui8ControlBits.upstream)
+        << "Test setup assumption broken - testCmdUpstream should grant an upstream transfer";
+
+    // Upstream request under the WRONG number (2 - no command 2 was issued here).
+    tsREQUEST sUpBad = {};
+    sUpBad.eReqType = eREQUEST_TYPE_UPSTREAM;
+    sUpBad.i16Num   = 2;
+
+    SCISlaveTransferInitiateResponse(&sTransfer, sUpBad.i16Num, sUpBad.eReqType);
+    teSCI_SLAVE_ERROR eBadError = SCISlaveTransferProcessRequest(&sTransfer, &sVarAccess, sUpBad);
+
+    EXPECT_EQ(eSCI_SLAVE_ERROR_UPSTREAM_NOT_INITIATED, eBadError)
+        << "Upstream request number must match the command that granted the transfer";
+
+    // Upstream request under the CORRECT number (1) must still succeed.
+    tsREQUEST sUpGood = {};
+    sUpGood.eReqType = eREQUEST_TYPE_UPSTREAM;
+    sUpGood.i16Num   = 1;
+
+    SCISlaveTransferInitiateResponse(&sTransfer, sUpGood.i16Num, sUpGood.eReqType);
+    teSCI_SLAVE_ERROR eGoodError = SCISlaveTransferProcessRequest(&sTransfer, &sVarAccess, sUpGood);
+
+    EXPECT_EQ(eSCI_SLAVE_ERROR_NONE, eGoodError);
+    EXPECT_EQ(eREQUEST_ACK_STATUS_SUCCESS, sTransfer.sResponseControl.sRsp.eReqAck);
 }
 
 }  // namespace

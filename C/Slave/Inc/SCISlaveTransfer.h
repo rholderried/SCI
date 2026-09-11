@@ -8,6 +8,10 @@
  * 	- 2022-01-13 - File creation
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *  - 2022-12-11 - Adapted code for unified master/slave repo structure.
+ *  - 2026-09-11 - Added i16TransferCmdNum to tsRESPONSECONTROL and fixed
+ *                 SCISlaveTransferProcessRequest()'s COMMAND/UPSTREAM
+ *                 number-comparison checks to use it instead of
+ *                 sRsp.i16Num (see SCISlaveTransfer.c history for details).
  *****************************************************************************/
 #ifndef _SCISLAVETRANSFER_H_
 #define _SCISLAVETRANSFER_H_
@@ -91,10 +95,21 @@ typedef struct
         uint8_t ui8ControlByte;
     };
     uint32_t    ui32DataIdx;
+    int16_t     i16TransferCmdNum; /*!< Number of the COMMAND request that owns the
+                                         current ongoing/upstream transfer. Set only
+                                         when SCISlaveTransferProcessRequest()'s COMMAND
+                                         case recognizes a genuinely new request (the
+                                         bNewCmd branch); left untouched by continuation
+                                         calls. Deliberately NOT the same as sRsp.i16Num,
+                                         which SCISlaveTransferInitiateResponse()
+                                         unconditionally overwrites from every incoming
+                                         request before ProcessRequest() runs - comparing
+                                         against sRsp.i16Num is always trivially true and
+                                         can never detect a genuine number change.*/
     tsRESPONSE  sRsp;
 }tsRESPONSECONTROL;
 
-#define tsRESPONSECONTROL_DEFAULTS {{.ui8ControlByte = 0}, 0, tsRESPONSE_DEFAULTS}
+#define tsRESPONSECONTROL_DEFAULTS {{.ui8ControlByte = 0}, 0, 0, tsRESPONSE_DEFAULTS}
 
 typedef struct
 {
