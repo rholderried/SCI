@@ -19,6 +19,14 @@
  *                 (see SCIMasterTransfer.c's SCITransferStart()). Also
  *                 fixed tsREQUEST_DEFAULTS, whose brace-initializer field
  *                 order did not match tsREQUEST's actual member order.
+ *  - 2026-09-11 - Added a required-parameter guard for
+ *                 MAX_NUMBER_OF_PARAMETER_DIGITS (must be defined in
+ *                 SCIconfig.h, no library-side default) backing a fixed
+ *                 stack buffer for per-value parsing in
+ *                 SCISlaveRequestParser()/SCIMasterResponseParser() instead
+ *                 of a malloc() sized to the untrusted wire length. Values
+ *                 longer than the bound are rejected with a new dedicated
+ *                 error code, not truncated.
  *****************************************************************************/
 
 #ifndef _SCITRANSFERCOMMON_H_
@@ -39,6 +47,27 @@
 #define COMMAND_IDENTIFIER      ':'
 #define UPSTREAM_IDENTIFIER     '>'
 #define DOWNSTREAM_IDENTIFIER   '<'
+
+/** \brief SCIconfig.h must define MAX_NUMBER_OF_PARAMETER_DIGITS: the
+ *  maximum number of characters a single wire-format parameter VALUE (a
+ *  GetVar/SetVar/Command argument or return value - NOT the request/
+ *  response ID number, which is a separate, unrelated field) may have.
+ *  Values longer than this are rejected (eSCI_SLAVE_ERROR_REQUEST_VALUE_TOO_LONG
+ *  on the Slave, eSCI_MASTER_ERROR_PARAMETER_TOO_LONG on the Master) rather
+ *  than parsed - see SCISlaveDataframe.c's SCISlaveRequestParser() and
+ *  SCIMasterDataframe.c's SCIMasterResponseParser(). Backs a fixed on-stack
+ *  conversion buffer instead of a malloc() sized to the (untrusted) wire
+ *  length. Deliberately not given a library-side default (unlike, say, a
+ *  hardcoded VALUE_MODE_HEX-only value) - every integration must pick this
+ *  consciously, exactly like MAX_NUM_REQUEST_VALUES/MAX_NUM_RESPONSE_VALUES
+ *  already must. In VALUE_MODE_HEX, 8 covers the full uint32_t range (see
+ *  strToHex() in Helpers.c, which independently caps at 8 hex nibbles).
+ *  VALUE_MODE_FLOAT has no such natural bound - size it to the longest
+ *  formatted string ftoa() can produce for your application's value range. */
+#ifndef MAX_NUMBER_OF_PARAMETER_DIGITS
+#error "SCIconfig.h must define MAX_NUMBER_OF_PARAMETER_DIGITS (see SCITransferCommon.h for what it bounds)."
+#endif
+
 /******************************************************************************
  * Type definitions
  *****************************************************************************/

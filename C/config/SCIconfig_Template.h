@@ -29,6 +29,9 @@
  *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
  *  - 2026-09-10 - Repurposed as a template; the GoogleTest suite now owns
  *                 its own copy at C/Test/config/SCIconfig.h.
+ *  - 2026-09-11 - Documented and defined MAX_NUMBER_OF_PARAMETER_DIGITS
+ *                 (SCITransferCommon.h), now a required parameter; updated
+ *                 the SCI_ERROR_OFFSET comment's error count (11 -> 12).
  *****************************************************************************/
 
 #ifndef _SCICONFIG_H_
@@ -57,11 +60,22 @@
 #define EEPROM_ADDRESSTYPE  EEPROM_WORD_ADDRESSABLE
 #define ADDRESS_OFFET       0
 
-// SCI error offset (SCI currently defines 11 errors)
+// SCI error offset (SCI currently defines 12 errors)
 #define SCI_ERROR_OFFSET    0x100
 
 // Number of request and response values
 #define MAX_NUM_REQUEST_VALUES  10
 #define MAX_NUM_RESPONSE_VALUES 10
+
+// Maximum characters of a single wire-format parameter value (a
+// GetVar/SetVar/Command argument or return value - NOT the request/
+// response ID number). Required - see MAX_NUMBER_OF_PARAMETER_DIGITS in
+// SCITransferCommon.h for what this bounds and why. Values longer than
+// this are rejected, not truncated. 8 (below) is correct for
+// VALUE_MODE_HEX (a hex-encoded uint32_t never needs more than 8 nibbles -
+// matches strToHex()'s own independent 8-nibble cap in Helpers.c). If you
+// switch to VALUE_MODE_FLOAT, change this to fit your longest formatted
+// float string instead.
+#define MAX_NUMBER_OF_PARAMETER_DIGITS 8
 
 #endif // _SCICONFIG_H_

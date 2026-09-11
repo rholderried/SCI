@@ -19,6 +19,10 @@
  *  - 2026-09-10 - Split off as C/Test/config/SCIconfig.h, the GoogleTest
  *                 suite's own configuration; C/config/SCIconfig.h became a
  *                 template (see C/config/SCIconfig_Template.h).
+ *  - 2026-09-11 - Added MAX_NUMBER_OF_PARAMETER_DIGITS (now a required
+ *                 SCIconfig.h parameter, see SCITransferCommon.h); updated
+ *                 the SCI_ERROR_OFFSET comment's error count (11 -> 12)
+ *                 for the two new error codes added to SCICommon.h.
  *****************************************************************************/
 
 #ifndef _SCICONFIG_H_
@@ -47,11 +51,16 @@
 #define EEPROM_ADDRESSTYPE  EEPROM_WORD_ADDRESSABLE
 #define ADDRESS_OFFET       0
 
-// SCI error offset (SCI currently defines 11 errors)
+// SCI error offset (SCI currently defines 12 errors)
 #define SCI_ERROR_OFFSET    0x100
 
 // Number of request and response values
 #define MAX_NUM_REQUEST_VALUES  10
 #define MAX_NUM_RESPONSE_VALUES 10
+
+// Maximum characters of a single wire-format parameter value (see
+// MAX_NUMBER_OF_PARAMETER_DIGITS in SCITransferCommon.h). VALUE_MODE_HEX
+// values are hex-encoded uint32_t, so 8 covers the full range.
+#define MAX_NUMBER_OF_PARAMETER_DIGITS 8
 
 #endif // _SCICONFIG_H_

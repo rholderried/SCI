@@ -7,6 +7,11 @@
  * <b> History </b>
  * 	- 2022-11-17 - File copied from SCI
  *  - 2022-12-13 - Adapted code for unified master/slave repo structure.
+ *  - 2026-09-11 - Added eSCI_SLAVE_ERROR_REQUEST_VALUE_TOO_LONG and
+ *                 eSCI_MASTER_ERROR_PARAMETER_TOO_LONG, both appended at
+ *                 the end of their enum (no existing value renumbered),
+ *                 for the new MAX_NUMBER_OF_PARAMETER_DIGITS bound in
+ *                 SCITransferCommon.h.
  *****************************************************************************/
 
 #ifndef _SCICOMMON_H_
@@ -51,7 +56,8 @@ typedef enum
     eSCI_MASTER_ERROR_PARAMETER_CONVERSION_FAILED,
     eSCI_MASTER_ERROR_EXPECTED_DATALENGTH_NOT_MET,
     eSCI_MASTER_ERROR_MESSAGE_EXCEEDS_TX_BUFFER_SIZE,
-    eSCI_MASTER_ERROR_FEATURE_NOT_IMPLEMENTED
+    eSCI_MASTER_ERROR_FEATURE_NOT_IMPLEMENTED,
+    eSCI_MASTER_ERROR_PARAMETER_TOO_LONG    /*!< A parsed response parameter value's wire-format character count exceeded MAX_NUMBER_OF_PARAMETER_DIGITS (SCIconfig.h). Distinct from PARAMETER_CONVERSION_FAILED, which means the characters within the length bound were not valid for the configured VALUE_MODE. */
 }teSCI_MASTER_ERROR;
 
 /** \brief SCI Slave errors */
@@ -68,7 +74,8 @@ typedef enum
     eSCI_SLAVE_ERROR_VARIABLE_NUMBER_CONVERSION_FAILED,
     eSCI_SLAVE_ERROR_REQUEST_VALUE_CONVERSION_FAILED,
     eSCI_SLAVE_ERROR_REQUEST_UNKNOWN,
-    eSCI_SLAVE_ERROR_UPSTREAM_NOT_INITIATED
+    eSCI_SLAVE_ERROR_UPSTREAM_NOT_INITIATED,
+    eSCI_SLAVE_ERROR_REQUEST_VALUE_TOO_LONG    /*!< A parsed request parameter value's wire-format character count exceeded MAX_NUMBER_OF_PARAMETER_DIGITS (SCIconfig.h). Distinct from REQUEST_VALUE_CONVERSION_FAILED, which means the characters within the length bound were not valid for the configured VALUE_MODE. */
 }teSCI_SLAVE_ERROR;
 
 /** @brief SCI version data structure */
