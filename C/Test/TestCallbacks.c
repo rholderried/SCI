@@ -95,8 +95,13 @@ bool SlaveReadEEROM (uint32_t *ui32Val, uint16_t ui16Address)
     return true;
 }
 
+bool g_forceEEPROMWriteFailure = false;
+
 bool SlaveWriteEEROM (uint32_t ui32Val, uint16_t ui16Address)
 {
+    if (g_forceEEPROMWriteFailure)
+        return false;
+
     #if EEPROM_ADDRESSTYPE == EEPROM_BYTE_ADDRESSABLE
     ui8EEPROMByteAddressable[ui16Address] = ui32Val;
     #elif EEPROM_ADDRESSTYPE == EEPROM_WORD_ADDRESSABLE

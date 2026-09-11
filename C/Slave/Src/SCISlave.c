@@ -8,6 +8,16 @@
  * 	- 2022-01-13 - File creation
  *  - 2022-03-17 - Port to C (Originally from SerialProtocol)
  *  - 2022-12-11 - Adapted code for unified master/slave repo structure.
+ *  - 2026-09-10 - Fix (see SCITransferCommon.h/SCIMasterTransfer.c): sReq
+ *                 (tsREQUEST) is initialized via tsREQUEST_DEFAULTS as
+ *                 before, but uValArr is now a fixed-size array member of
+ *                 tsREQUEST itself (not a bare pointer), so this
+ *                 statemachine step gets valid backing storage for free -
+ *                 no local buffer needed here. Previously uValArr was
+ *                 NULL, and SCISlaveRequestParser() writes parsed
+ *                 SetVar/Command argument values into it whenever the
+ *                 incoming message carries any - a NULL-pointer write.
+ *                 Found via SCI round-trip test expansion.
  *****************************************************************************/
 
 #include <string.h>

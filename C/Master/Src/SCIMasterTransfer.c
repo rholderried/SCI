@@ -7,6 +7,24 @@
  * <b> History </b>
  * 	- 2022-11-21 - File creation 
  *  - 2022-12-11 - Adapted code for unified master/slave repo structure.
+ *  - 2026-09-10 - Fix: eREQUEST_TYPE_SETVAR case checked
+ *                 sCallbacks.GetVarCB instead of SetVarCB before invoking
+ *                 SetVarCB, so SetVarExternalCB never fired. Fix: Upstream
+ *                 multi-chunk continuation (eREQUEST_TYPE_UPSTREAM) called
+ *                 RequestCB() for the next chunk without first calling
+ *                 ReleaseProtocolCB(), unlike every other continuation
+ *                 branch in this file - the protocol stayed non-IDLE, so
+ *                 SCIInitiateRequest() silently refused to send, causing
+ *                 unbounded accumulation past the end of
+ *                 pui8UpstreamBuffer (heap corruption) on any upstream
+ *                 transfer spanning more than one packet. Fix: tsREQUEST's
+ *                 uValArr became a fixed-size array member (see
+ *                 SCITransferCommon.h) instead of a bare pointer - this
+ *                 fixes a NULL-pointer write on the Slave side
+ *                 (SCISlave.c) and also means SCITransferStart() must now
+ *                 memcpy() the caller's values into sReq.uValArr instead
+ *                 of aliasing the caller's pointer. All found via SCI
+ *                 round-trip test expansion.
  * 
  * TODOs:
  * ======
@@ -38,8 +56,16 @@ bool SCITransferStart (tsSCI_TRANSFER *psSciTransfer, teREQUEST_TYPE eReqType, i
     // Take over the arguments
     sReq.eReqType       = eReqType;
     sReq.i16Num         = i16CmdNum;
-    sReq.uValArr        = uVal;
     sReq.ui8ValArrLen   = ui8ArgNum;
+
+    // Copy into the request's own backing storage (uValArr is now a fixed
+    // array member of tsREQUEST, not a pointer into caller-owned memory -
+    // bound the copy to the array size).
+    if (uVal != NULL && ui8ArgNum > 0)
+    {
+        uint8_t ui8CopyCnt = ui8ArgNum < MAX_NUM_REQUEST_VALUES ? ui8ArgNum : MAX_NUM_REQUEST_VALUES;
+        memcpy(sReq.uValArr, uVal, ui8CopyCnt * sizeof(tuREQUESTVALUE));
+    }
 
     if(!psSciTransfer->sCallbacks.RequestCB(sReq))
         return false;
@@ -56,7 +82,7 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
     switch (sRsp.eReqType)
     {
         case eREQUEST_TYPE_SETVAR:
-            if (psSciTransfer->sCallbacks.GetVarCB != NULL)
+            if (psSciTransfer->sCallbacks.SetVarCB != NULL)
             {
                 eTransferAck = psSciTransfer->sCallbacks.SetVarCB(sRsp.eReqAck, sRsp.i16Num, sRsp.sTransferData.ui16Error);
             }
@@ -200,7 +226,15 @@ bool SCITransferControl (tsSCI_TRANSFER *psSciTransfer, tsRESPONSE sRsp)
             // There is additional data to transfer
             if (psSciTransfer->sTransferInfo.ui32ReceivedDataCnt < psSciTransfer->sTransferInfo.ui32ExpectedDataCnt)
             {
-                // New request
+                // New request. Must release the protocol back to IDLE first -
+                // SCIInitiateRequest()/SCIRequestGetVar() et al. all refuse to
+                // start a new transfer while the protocol is still
+                // ePROTOCOL_EVALUATING, so without this the continuation
+                // request silently fails to send, the stale response gets
+                // re-processed next tick, and ui32ReceivedDataCnt grows
+                // unbounded past the end of pui8UpstreamBuffer (heap
+                // corruption on multi-chunk upstream transfers).
+                psSciTransfer->sCallbacks.ReleaseProtocolCB();
                 psSciTransfer->sCallbacks.RequestCB(psSciTransfer->sTransferInfo.sReq);
             }
             // All data arrived

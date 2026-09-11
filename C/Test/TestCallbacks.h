@@ -20,6 +20,11 @@
  * Global variable definition
  *****************************************************************************/
 
+/** \brief Set to true from a test to force SlaveWriteEEROM (TestCallbacks.c)
+ *  to fail, exercising the EEPROM-write-failure rollback path. Reset to
+ *  false by tests in SetUp()/TearDown() to avoid cross-test leakage. */
+extern bool g_forceEEPROMWriteFailure;
+
 /******************************************************************************
  * Function declarations
  *****************************************************************************/

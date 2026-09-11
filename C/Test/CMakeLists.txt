@@ -13,8 +13,13 @@ add_executable(sci_tests
     TestCallbacks.c
     VariablesAndCommands.c
     gtest/SlaveTests.cpp
+    gtest/SlaveErrorTests.cpp
     gtest/MasterTestCallbacks.c
     gtest/RoundTripTests.cpp
+    gtest/RoundTripSetVarTests.cpp
+    gtest/RoundTripCommandTests.cpp
+    gtest/RoundTripErrorTests.cpp
+    gtest/RoundTripSequenceTests.cpp
 )
 
 target_include_directories(sci_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})

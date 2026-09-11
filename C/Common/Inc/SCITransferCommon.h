@@ -6,6 +6,19 @@
  *
  * <b> History </b>
  * 	- 2022-12-11 - File creation
+ *  - 2026-09-10 - tsREQUEST.uValArr changed from a bare tuREQUESTVALUE*
+ *                 pointer to a fixed-size tuREQUESTVALUE[MAX_NUM_REQUEST_VALUES]
+ *                 array member, so every tsREQUEST owns its own backing
+ *                 storage (matches the existing tsTRANSFER_DATA.puRespVals
+ *                 pattern below). Previously the pointer defaulted to NULL
+ *                 via tsREQUEST_DEFAULTS and nothing on the Slave's request-
+ *                 parsing path ever pointed it at real storage, causing a
+ *                 NULL-pointer write on any SetVar/Command-with-arguments
+ *                 request; callers that build a tsREQUEST with values now
+ *                 copy into uValArr instead of aliasing their own array
+ *                 (see SCIMasterTransfer.c's SCITransferStart()). Also
+ *                 fixed tsREQUEST_DEFAULTS, whose brace-initializer field
+ *                 order did not match tsREQUEST's actual member order.
  *****************************************************************************/
 
 #ifndef _SCITRANSFERCOMMON_H_
@@ -94,11 +107,11 @@ typedef struct
 {
     int16_t         i16Num;                            /*!< ID Number.*/
     teREQUEST_TYPE  eReqType;                          /*!< REQUEST Type.*/
-    tuREQUESTVALUE  *uValArr;                          /*!< Pointer to the value array.*/
+    tuREQUESTVALUE  uValArr[MAX_NUM_REQUEST_VALUES];   /*!< Value array backing storage (fixed size, not a bare pointer - every tsREQUEST owns its own storage, so callers/parsers can always write into it directly).*/
     uint8_t         ui8ValArrLen;                      /*!< Length of the value Array.*/
 }tsREQUEST;
 
-#define tsREQUEST_DEFAULTS         {0, 0, NULL, eREQUEST_TYPE_NONE}
+#define tsREQUEST_DEFAULTS         {0, eREQUEST_TYPE_NONE, {{.ui32_hex = 0}}, 0}
 
 /** \brief Response structure declaration.*/
 typedef struct

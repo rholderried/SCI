@@ -1,16 +1,4 @@
-#include <gtest/gtest.h>
-
-extern "C" {
-#include "SCISlave.h"
-#include "SCIMaster.h"
-#include "MasterTestCallbacks.h"
-}
-
-extern "C" {
-    extern tsSCIVAR varStruct[];
-    extern COMMAND_CB cmdStruct;
-    extern tsSCI_SLAVE_CALLBACKS sSlaveTestCbs;
-}
+#include "RoundTripFixture.h"
 
 namespace {
 
@@ -29,14 +17,14 @@ static teTRANSFER_ACK OnGetVarResponse(teREQUEST_ACKNOWLEDGE eAck, int16_t i16Nu
     return eTRANSFER_ACK_SUCCESS;
 }
 
-class RoundTripTest : public ::testing::Test {
+class RoundTripGetVarTest : public RoundTripTest {
 protected:
     void SetUp() override {
+        RoundTripTest::SetUp();
+
         g_callbackFired = false;
         g_receivedValue = 0;
         g_receivedAck   = eREQUEST_ACK_STATUS_UNKNOWN;
-
-        SCISlaveInit(sSlaveTestCbs, varStruct, &cmdStruct);
 
         tsSCI_MASTER_CALLBACKS sMasterCbs = tsSCI_MASTER_CALLBACKS_DEFAULTS;
         sMasterCbs.GetVarExternalCB     = OnGetVarResponse;
@@ -45,19 +33,7 @@ protected:
     }
 };
 
-// Pumps both statemachines in lockstep until the Master returns to IDLE
-// (transaction complete) or the iteration budget runs out.
-static bool PumpUntilIdle(int maxIterations = 500) {
-    for (int i = 0; i < maxIterations; i++) {
-        SCIMasterSM();
-        SCISlaveStatemachine();
-        if (SCIGetProtocolState() == ePROTOCOL_IDLE && i > 0)
-            return true;
-    }
-    return false;
-}
-
-TEST_F(RoundTripTest, GetVarUI8RoundTrip) {
+TEST_F(RoundTripGetVarTest, GetVarUI8RoundTrip) {
     // Same variable/protocol-number pairing as SlaveTest.PollVarUI8:
     // address 3 == ui8_test == 245 (0xF5).
     SCIRequestGetVar(3);

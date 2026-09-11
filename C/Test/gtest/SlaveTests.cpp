@@ -7,7 +7,7 @@ extern "C" {
 
 extern "C" {
     extern tsSCIVAR varStruct[];
-    extern COMMAND_CB cmdStruct;
+    extern COMMAND_CB cmdStruct[];
     extern tsSCI_SLAVE_CALLBACKS sSlaveTestCbs;
     extern char cTxMsgBuf[];
     extern char cRxMsgBuf[];
@@ -18,7 +18,7 @@ namespace {
 class SlaveTest : public ::testing::Test {
 protected:
     void SetUp() override {
-        SCISlaveInit(sSlaveTestCbs, varStruct, &cmdStruct);
+        SCISlaveInit(sSlaveTestCbs, varStruct, cmdStruct);
     }
 };
 
